@@ -1,0 +1,14 @@
+MANIFEST.in
+README.md
+setup.py
+AqOrg/AqOrg.py
+AqOrg/__init__.py
+AqOrg.egg-info/PKG-INFO
+AqOrg.egg-info/SOURCES.txt
+AqOrg.egg-info/dependency_links.txt
+AqOrg.egg-info/not-zip-safe
+AqOrg.egg-info/requires.txt
+AqOrg.egg-info/top_level.txt
+data/alcohol_demo.csv
+data/element.csv
+data/group_contribution_data.csv

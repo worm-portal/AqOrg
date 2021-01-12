@@ -1,0 +1,7 @@
+chemparse
+thermo
+pubchempy
+sigfig
+math
+pandas
+setuptools
