@@ -9,6 +9,7 @@ import pubchempy as pcp
 import os
 import thermo
 from chemparse import parse_formula
+import pkg_resources
 
 # for benson group additivity
 from pgradd.GroupAdd.Library import GroupLibrary
@@ -65,14 +66,14 @@ class AqOrganicEstimator():
         # properties of the elements
         # Cox, J. D., Wagman, D. D., and Medvedev, V. A., CODATA Key Values for Thermodynamics, Hemisphere Publishing Corp., New York, 1989.
         # Compiled into a CSV by Jeffrey Dick for CHNOSZ
-        element_data = pd.read_csv("data/element.csv", index_col="element")
+        element_data = pd.read_csv(pkg_resources.resource_stream(__name__, 'data/element.csv'), index_col="element")
         self.element_data = element_data.loc[element_data['source'] == "CWM89"]
 
         self.groups = list() # a list of all groups relevant to this dataset
 
         self.df_c = pd.DataFrame() #
         # load compiled 2nd order group contribution (gc) data
-        self.df_gc = pd.read_csv("data/group_contribution_data.csv", dtype=str)
+        self.df_gc = pd.read_csv(pkg_resources.resource_stream(__name__, "data/group_contribution_data.csv"), dtype=str)
         self.df_gc['elem'] = self.df_gc['elem'].fillna('')
 
         self.df_est = pd.DataFrame()
@@ -82,7 +83,7 @@ class AqOrganicEstimator():
 
     def set_groups(self, input_name, output_name):
 
-        ## load alcohol test csv
+        ## load csv
         df_inp = pd.read_csv(input_name)
 
         ## get list of molecules to look up
@@ -559,7 +560,7 @@ class AqOrganicEstimator():
 
         obigt_out = obigt_out.dropna() # remove any rows with 'NaN'
 
-        obigt_out.to_csv("Alkene_Hydration_Properties_no_ethene_obigt.csv", index=False)
+        obigt_out.to_csv("OBIGT.csv", index=False)
 
 
     def find_HKF(self, Gh=float('NaN'), Vh=float('NaN'), Cp=float('NaN'),

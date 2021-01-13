@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: AqOrg
-Version: 0.0.2
+Version: 0.1.0
 Summary: Estimate thermodynamic properties of aqueous organic compounds
 Home-page: UNKNOWN
 Author: Grayson Boyer
@@ -33,5 +33,5 @@ Platform: UNKNOWN
 Classifier: Programming Language :: Python :: 3
 Classifier: License :: OSI Approved :: MIT License
 Classifier: Operating System :: OS Independent
-Requires-Python: >=3.8
+Requires-Python: >=3.6
 Description-Content-Type: text/markdown
