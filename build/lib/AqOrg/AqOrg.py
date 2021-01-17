@@ -10,6 +10,7 @@ import os
 import thermo
 from chemparse import parse_formula
 import pkg_resources
+from datetime import datetime
 
 # for benson group additivity
 from pgradd.GroupAdd.Library import GroupLibrary
@@ -71,20 +72,24 @@ class AqOrganicEstimator():
 
         self.groups = list() # a list of all groups relevant to this dataset
 
-        self.df_c = pd.DataFrame() #
-        # load compiled 2nd order group contribution (gc) data
-        self.df_gc = pd.read_csv(pkg_resources.resource_stream(__name__, "data/group_contribution_data.csv"), dtype=str)
+        self.df_c = pd.DataFrame()
+
+        # load 2nd order group contribution data
+        self.load_group_data(pkg_resources.resource_stream(__name__, "data/group_contribution_data.csv"))
+
+    def load_group_data(self, db_filename):
+        self.df_gc = pd.read_csv(db_filename, dtype=str)
         self.df_gc['elem'] = self.df_gc['elem'].fillna('')
-
-        self.df_est = pd.DataFrame()
-
         self.pattern_dict = pd.Series(self.df_gc["elem"].values, index=self.df_gc["smarts"]).to_dict()
+        self.df_gc = self.df_gc.set_index("smarts")
 
+    def set_groups(self, input_name='', output_name=''):
 
-    def set_groups(self, input_name, output_name):
+        if ".csv" in input_name:
+            df_inp = pd.read_csv(input_name)
 
-        ## load csv
-        df_inp = pd.read_csv(input_name)
+        else:
+            df_inp = pd.DataFrame({'compound':[input_name],	'test':[0]})
 
         ## get list of molecules to look up
         molecules = df_inp["compound"]
@@ -93,22 +98,24 @@ class AqOrganicEstimator():
         df = pd.DataFrame()
         vetted_mol = []
         for molecule in molecules:
-            # try:
-            df = df.append(self.match_groups(molecule, draw=True), ignore_index=True)
-            vetted_mol.append(molecule) # matches online
-            # except:
-            #     pass
+            try:
+                df = df.append(self.match_groups(molecule), ignore_index=True)
+                vetted_mol.append(molecule) # matches online
+            except:
+                print("Error: Could not find", molecule, "in online pubchem database.")
+
         df.index = vetted_mol
         props = df_inp[[colname for colname in df_inp.columns.values if colname not in ["compound"]]]
         prop_names = df_inp.columns.values[df_inp.columns.values != 'compound']
         props.index = molecules
         self.df_c = pd.concat([props, df], axis=1, sort=False)
-        self.df_c.to_csv(output_name, index_label="compound")
+
+        if ".csv" in output_name:
+            self.df_c.to_csv(output_name, index_label="compound")
 
         # remove columns with no matches
         self.df_c = self.df_c.loc[:, (self.df_c.sum(axis=0) != 0)]
-        # set index to smarts code
-        self.df_gc = self.df_gc.set_index("smarts")
+        
         # get a list of relevent groups
         self.groups = [group for group in self.df_c.columns if group not in ["formula"]+list(prop_names)]
         
@@ -147,19 +154,9 @@ class AqOrganicEstimator():
             formula_string = formula_string + str(key) + str(v)
         return formula_string
 
-    def match_group(self, name, pattern):
-        this_compound = pcp.get_compounds(name, "name")
-        this_smile = this_compound[0].canonical_smiles
-        mol = Chem.MolFromSmiles(this_smile)
-        functional_group = Chem.MolFromSmarts(pattern)
-        matches = mol.GetSubstructMatches(functional_group)
-        return len(matches)
-
-    def match_groups(self, name, draw=False):
+    def match_groups(self, name, show=False, save=False):
         patterns = self.pattern_dict.keys()
-        this_compound = pcp.get_compounds(name, "name")
-        this_smile = this_compound[0].canonical_smiles
-        mol = Chem.MolFromSmiles(this_smile) #convert smiles from internet to usable form for rdkit
+        this_compound, this_smile, mol = self.mol_from_smiles(name)
 
         match_dict = dict(zip(patterns, [0]*len(patterns))) # initialize match_dict
         problem_keys = []
@@ -175,9 +172,8 @@ class AqOrganicEstimator():
             self.pattern_dict.pop(key, None)
             match_dict.pop(key, None)
 
-        
         ### check that total formula of groups matches that of the molecule
-        
+
         # create a dictionary of element matches
         total_formula_dict = {}
         for match in match_dict.keys():
@@ -225,33 +221,22 @@ class AqOrganicEstimator():
         match_dict["formula"] = self.dict_to_formula(total_formula_dict)
         
         ### create a png and svg of the molecule
-        if draw:
-            molSize=(450,150)
-            mc = Chem.Mol(mol.ToBinary())
-            if not mc.GetNumConformers():
-                #Compute 2D coordinates
-                rdDepictor.Compute2DCoords(mc)
-            # init the drawer with the size
-            drawer = rdMolDraw2D.MolDraw2DSVG(molSize[0],molSize[1])
-            #draw the molcule
-            drawer.DrawMolecule(mc)
-            drawer.FinishDrawing()
-            # get the SVG string
-            svg = drawer.GetDrawingText()
-            # fix the svg string and display it
-        #     display(SVG(svg.replace('svg:','')))
-            os.makedirs("mol_svg",exist_ok=True)
-            os.makedirs("mol_png",exist_ok=True)
-            #Draw.MolToFile( mol, "mol_svg/"+name+".svg" )
-            Draw.MolToFile( mol, "mol_png/"+name+".png" )
+        self.display_molecule(name, mol_smiles=mol, show=show, save=save)
         return match_dict
 
-    def display_molecule(self, name, save=False):
+    def mol_from_smiles(self, name):
         this_compound = pcp.get_compounds(name, "name")
         this_smile = this_compound[0].canonical_smiles
         mol = Chem.MolFromSmiles(this_smile)
-        molSize=(450,150)
-        mc = Chem.Mol(mol.ToBinary())
+        return this_compound, this_smile, mol
+
+    def display_molecule(self, name, mol_smiles=None, show=True, save=False):
+        if mol_smiles == None:
+            this_compound, this_smile, mol_smiles = self.mol_from_smiles(name)
+        
+        mc = Chem.Mol(mol_smiles.ToBinary())
+        molSize=(450, 150)
+        
         if not mc.GetNumConformers():
             #Compute 2D coordinates
             rdDepictor.Compute2DCoords(mc)
@@ -262,13 +247,16 @@ class AqOrganicEstimator():
         drawer.FinishDrawing()
         # get the SVG string
         svg = drawer.GetDrawingText()
-        # fix the svg string and display it
-        display(SVG(svg.replace('svg:','')))
+
+        if show:
+            # fix the svg string and display it
+            display(SVG(svg.replace('svg:','')))
+
         if save:
-            os.makedirs("mol_svg",exist_ok=True)
-            os.makedirs("mol_png",exist_ok=True)
+            os.makedirs("mol_svg", exist_ok=True)
+            os.makedirs("mol_png", exist_ok=True)
             #Draw.MolToFile( mol, "mol_svg/"+name+".svg" )
-            Draw.MolToFile( mol, "mol_png/"+name+".png" )
+            Draw.MolToFile(mol_smiles, "mol_png/"+name+".png")
 
     def get_smarts(self, name):
         this_compound = pcp.get_compounds(name, "name")
@@ -302,15 +290,16 @@ class AqOrganicEstimator():
         thermochem = lib.Estimate(descriptors,'thermochem')
         return thermochem.get_H(298.15, units="kJ/mol"), thermochem.get_S(298.15, units="J/mol/K"), thermochem.get_Cp(298.15, units="J/mol/K")
 
-    def test_group_match(self, molecule):
+    def test_group_match(self, molecule, show=True, save=False):
         # test group matching and error messages
-        #try:
-        return self.match_groups(molecule, draw=False)
-        # except:
-        #     print("test failed... maybe the molecule name is spelled incorrectly?")
+        try:
+            match_dict = self.match_groups(molecule, show=show, save=save)
+            return {key:value for key,value in zip(match_dict.keys(), match_dict.values()) if value !=0}
+        except:
+            print("Could not find group matches. Is the molecule name '{}' spelled correctly?".format(molecule))
 
     # create a dataframe to store estimated properties of molecules
-    def create_df_est(self, csv_out_name, ig_method="Joback"):
+    def create_df_est(self, csv_out_name='', ig_method="Joback"):
         """
         ig_method: String. Accepts "Joback" or "Benson". Group contribution method for ideal gas properties. 
         """
@@ -335,17 +324,20 @@ class AqOrganicEstimator():
             
         for molecule in self.df_c.index:
             
-            formula = self.df_c.loc[molecule, "formula"]
+            try:
+                formula = self.df_c.loc[molecule, "formula"]
+            except:
+                print("Error:", molecule, "has no formula.")
+                continue
             
             for prop in props:
                 
-                #print('\nPROPERTY:', prop, "\n")
                 err_str = prop + "_err"
                 
                 # derive Sh, entropy of hydration, in J/mol K
                 if prop == "Sh":
                     try:
-                        # S = (G-H)/(-Tref)
+                        # Entropy calculated from S = (G-H)/(-Tref)
                         mol_prop = (float(self.df_est.loc[molecule, "Gh"]) - float(self.df_est.loc[molecule, "Hh"]))/(-298.15)
                         mol_prop = mol_prop*1000 # convert kJ/molK to J/molK
                         
@@ -452,7 +444,7 @@ class AqOrganicEstimator():
                 Selements = float("NaN")
             
             if ig_method == "Joback":
-                # Joback estimation of the Gibbs free energy of formation of the ideal gas
+                # Joback estimation of the Gibbs free energy of formation of the ideal gas (Joule-based)
                 try:
                     mol = self.get_smiles(molecule)
                     J = thermo.Joback(mol) 
@@ -467,7 +459,7 @@ class AqOrganicEstimator():
                     Cpig = float("NaN")
             
             elif ig_method == "Benson":
-                # Benson estimation of the Gibbs free energy of formation of the ideal gas
+                # Benson estimation of the Gibbs free energy of formation of the ideal gas (Joule-based)
                 try:
                     Hig, Sig, Cpig = self.BensonHSCp(molecule)
                     delta_Sig = Sig - Selements
@@ -517,18 +509,25 @@ class AqOrganicEstimator():
                 print("Could not calculate HKF parameters for", molecule)
                 pass
         
-        self.df_est.to_csv(csv_out_name)
+        if '.csv' in csv_out_name:
+            self.df_est.to_csv(csv_out_name)
 
 
-    # write aqueous output to OBIGT csv file
-    def write_to_OBIGT(self):
+    # convert dataframe into an OBIGT table with an option to write to a csv file.
+    def convert_to_OBIGT(self, filename=''):
         name = list(self.df_est.index)
-        abbrv = list(self.df_est["formula"])
+
+        try:
+            abbrv = list(self.df_est["formula"])
+        except:
+            print("Error: could not return an OBIGT entry because one or more chemical formulas are missing.")
+            return
+
         formula = list(self.df_est["formula"])
         state = ["aq"]*len(self.df_est.index)
-        ref1 = ["test"]*len(self.df_est.index)
-        ref2 = ["test"]*len(self.df_est.index)
-        date = ["test"]*len(self.df_est.index)
+        ref1 = ["AqOrg"]*len(self.df_est.index)
+        ref2 = ["GrpAdd"]*len(self.df_est.index)
+        date = [datetime.now().strftime("%d/%m/%Y %H:%M:%S")]*len(self.df_est.index)
         E_units = ["J"]*len(self.df_est.index)
         G = [float(value)*1000 for value in list(self.df_est["Gaq"])]
         H = [float(value)*1000 for value in list(self.df_est["Haq"])]
@@ -542,7 +541,7 @@ class AqOrganicEstimator():
         c1 = list(self.df_est["c1"])
         c2 = list(self.df_est["c2"])
         omega = list(self.df_est["omega"])
-        Z = ["0"]*len(self.df_est.index)
+        Z = ["0"]*len(self.df_est.index) # !
 
         obigt_out = pd.DataFrame(zip(name, abbrv, formula,
                                     state, ref1, ref2,
@@ -560,7 +559,10 @@ class AqOrganicEstimator():
 
         obigt_out = obigt_out.dropna() # remove any rows with 'NaN'
 
-        obigt_out.to_csv("OBIGT.csv", index=False)
+        if '.csv' in filename:
+            obigt_out.to_csv(filename, index=False)
+
+        return obigt_out
 
 
     def find_HKF(self, Gh=float('NaN'), Vh=float('NaN'), Cp=float('NaN'),
@@ -745,11 +747,13 @@ class AqOrganicEstimator():
                                               Cp=347, charge=0, J_to_cal=False))
         print("beta-alanine", self.find_HKF(Gh=-74, Vh=58.7,
                                             Cp=76, charge=0, J_to_cal=False))
+    
+    def estimate(self, input_name='', output_name='', csv_out_name='', ig_method="Joback", OBIGT_filename='', show=True):
 
+        if show and '.csv' not in input_name:
+            self.display_molecule(name=input_name)
 
-# def main():
-#     aoe = AqOrganicEstimator()
-#     aoe.set_groups(input_name)
+        self.set_groups(input_name, output_name)
+        self.create_df_est(csv_out_name, ig_method=ig_method)
+        return self.convert_to_OBIGT(filename=OBIGT_filename)
 
-# if __name__ == main():
-#     main()
