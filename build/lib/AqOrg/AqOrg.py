@@ -533,7 +533,7 @@ class AqOrganicEstimator():
         H = [float(value)*1000 for value in list(self.df_est["Haq"])]
         S = list(self.df_est["Saq"])
         Cp = list(self.df_est["Cpaq"])
-        V = list(self.df_est["V"])
+        V = [float(value) for value in list(self.df_est["V"])]
         a1 = list(self.df_est["a1"])
         a2 = list(self.df_est["a2"])
         a3 = list(self.df_est["a3"])
@@ -541,7 +541,7 @@ class AqOrganicEstimator():
         c1 = list(self.df_est["c1"])
         c2 = list(self.df_est["c2"])
         omega = list(self.df_est["omega"])
-        Z = ["0"]*len(self.df_est.index) # !
+        Z = [0]*len(self.df_est.index) # !
 
         obigt_out = pd.DataFrame(zip(name, abbrv, formula,
                                     state, ref1, ref2,
