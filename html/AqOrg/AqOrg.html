@@ -1,0 +1,1960 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.9.2" />
+<title>AqOrg.AqOrg API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>AqOrg.AqOrg</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">from IPython.display import SVG
+from rdkit import Chem
+from rdkit.Chem import rdDepictor, Draw
+from rdkit.Chem.Draw import rdMolDraw2D
+import pandas as pd
+import math
+import sigfig
+import pubchempy as pcp
+import os
+import thermo
+from chemparse import parse_formula
+import pkg_resources
+from datetime import datetime
+
+# for benson group additivity
+from pgradd.GroupAdd.Library import GroupLibrary
+import pgradd.ThermoChem
+
+
+def find_HKF(Gh=float(&#39;NaN&#39;), V=float(&#39;NaN&#39;), Cp=float(&#39;NaN&#39;),
+             Gf=float(&#39;NaN&#39;), Hf=float(&#39;NaN&#39;), Saq=float(&#39;NaN&#39;),
+             charge=float(&#39;NaN&#39;), J_to_cal=True):
+    
+    &#34;&#34;&#34;
+    Estimate HKF parameters from standard state thermodynamic properties of an
+    aqueous organic molecule.
+    
+    Parameters
+    ----------
+    Gh : numeric
+        Standard state partial molal Gibbs free energy of hydration in kJ/mol.
+    
+    V : numeric
+        Standard state partial molal volume in cm3/mol.
+    
+    Cp : numeric
+        Standard state partial molal heat capacity in J/mol/K.
+    
+    Gf : numeric
+        Standard state partial molal Gibbs free energy of formation in kJ/mol.
+    
+    Hf : numeric
+        Standard state partial molal enthalpy of formation in kJ/mol.
+    
+    Saq : numeric
+        Standard state partial molal third law entropy in J/mol/K.
+    
+    charge : numeric
+        The charge of the molecule.
+    
+    J_to_cal : bool, default True
+        Should the output be calorie-based? kJ/mol will be converted to cal/mol
+        and J/mol/K will be converted to cal/mol/K.
+        
+    Returns
+    ----------
+    out : dict
+        A dictonary of properties and parameters. These will either be
+        Joule-based or calorie-based depending on the parameter `J_to_cal`.
+    &#34;&#34;&#34;
+
+    # define eta (angstroms*cal/mol)
+    eta = (1.66027*10**5)
+
+    # define YBorn (1/K)
+    YBorn = -5.81*10**-5
+
+    # define QBorn (1/bar)
+    QBorn = 5.90*10**-7
+
+    # define XBorn (1/K^2)
+    XBorn = -3.09*10**-7
+
+    # define abs_protonBorn (cal/mol), mentioned in text after Eq 47 in Shock and Helgeson 1988
+    abs_protonBorn = (0.5387 * 10**5)
+
+    if not pd.isnull(Gh) and charge == 0:
+
+        # find omega*10^-5 (j/mol) if neutral and Gh available
+        # Eq 8 in Plyasunov and Shock 2001
+        HKFomega = 2.61+(324.1/(Gh-90.6))
+
+    elif charge == 0:
+
+        # find omega*10^-5 (j/mol) if neutral and Gh unavailable
+        # Eq 61 in Shock and Helgeson 1990 for NONVOLATILE neutral organic species
+        HKFomega = (10 ^ -5)*((-1514.4*(Saq/4.184)) + (0.34*10**5))*4.184
+
+    elif charge != 0:
+
+        # define alphaZ (described in text after Eq 59 in Shock and Helgeson 1990)
+        if (abs(charge) == 1):
+            alphaZ = 72
+        elif (abs(charge) == 2):
+            alphaZ = 141
+        elif (abs(charge) == 3):
+            alphaZ = 211
+        elif (abs(charge) == 4):
+            alphaZ = 286
+        else:
+            alphaZ = float(&#39;NaN&#39;)
+
+        # define BZ
+        BZ = ((-alphaZ*eta)/(YBorn*eta - 100)) - charge * \
+            abs_protonBorn  # Eq 55 in Shock and Helgeson 1990
+
+        # find ion omega*10^-5, (J/mol) if charged
+        HKFomega = (10 ^ -5)*(-1514.4*(Saq/4.184) + BZ) * \
+            4.184  # Eq 58 in Shock and Helgeson 1990
+
+        ### METHOD FOR INORGANIC AQUEOUS ELECTROLYTES USING SHOCK AND HELGESON 1988:
+
+        # find rej (angstroms), ions only
+        #rej &lt;- ((charge^2)*(eta*YBorn-100))/((Saq/4.184)-71.5*abs(charge)) # Eqs 46+56+57 in Shock and Helgeson 1988
+
+        # find ion absolute omega*10^-5, (cal/mol)
+        #HKFomega_abs_ion &lt;- (eta*(charge^2))/rej # Eq 45 in Shock and Helgeson 1988
+
+        # find ion omega*10^-5, (J/mol)
+        #HKFomega2 &lt;- (10^-5)*(HKFomega_abs_ion-(charge*abs_protonBorn))*4.184 # Eq 47 in Shock and Helgeson 1988
+
+    else:
+        HKFomega = float(&#39;NaN&#39;)
+
+    # find delta V solvation (cm3/mol)
+    # Eq 5 in Shock and Helgeson 1988, along with a conversion of 10 cm3 = 1 joule/bar
+    V_solv = -(HKFomega/10**-5)*QBorn*10
+
+    # find delta V nonsolvation (cm3/mol)
+    V_nonsolv = V - V_solv  # Eq 4 in Shock and Helgeson 1988
+
+    # find sigma (cm3/mol)
+    HKFsigma = 1.11*V_nonsolv + 1.8  # Eq 87 in Shock and Helgeson
+
+    # find delta cp solvation (J/mol*K)
+    # Eq 35 in Shock and Helgeson 1988 dCpsolv = omega*T*X
+    cp_solv = ((HKFomega/10**-5)*298.15*XBorn)
+
+    # find delta cp nonsolvation (J/mol*K)
+    cp_nonsolv = Cp - cp_solv  # Eq 29 in Shock and Helgeson 1988
+
+    if not pd.isnull(Gh) and charge == 0:
+        # find a1*10 (j/mol*bar)
+        # Eq 10 in Plyasunov and Shock 2001
+        HKFa1 = (0.820-((1.858*10**-3)*(Gh)))*V
+        # why is this different than Eq 16 in Sverjensky et al 2014? Regardless, results seem to be very close using this eq vs. Eq 16.
+
+        # find a2*10^-2 (j/mol)
+        # Eq 11 in Plyasunov and Shock 2001
+        HKFa2 = (0.648+((0.00481)*(Gh)))*V
+
+        # find a4*10^-4 (j*K/mol)
+        # Eq 12 in Plyasunov and Shock 2001
+        HKFa4 = 8.10-(0.746*HKFa2)+(0.219*Gh)
+
+    elif charge != 0:
+        # find a1*10 (j/mol*bar)
+        # Eq 16 in Sverjensky et al 2014, after Plyasunov and Shock 2001, converted to J/mol*bar. This equation is used in the DEW model since it works for charged and noncharged species up to 60kb
+        HKFa1 = (0.1942*V_nonsolv + 1.52)*4.184
+
+        # find a2*10^-2 (j/mol)
+        # Eq 8 in Shock and Helgeson, rearranged to solve for a2*10^-2. Sigma is divided by 41.84 due to the conversion of 41.84 cm3 = cal/bar
+        HKFa2 = (10**-2)*(((HKFsigma/41.84) -
+                        ((HKFa1/10)/4.184))/(1/(2601)))*4.184
+
+        # find a4*10^-4 (j*K/mol)
+        # Eq 88 in Shock and Helgeson, solve for a4*10^-4
+        HKFa4 = (10**-4)*(-4.134*(HKFa2/4.184)-27790)*4.184
+
+    else:
+        HKFa1 = float(&#39;NaN&#39;)
+        HKFa2 = float(&#39;NaN&#39;)
+        HKFa3 = float(&#39;NaN&#39;)
+
+    # find c2*10^-4 (j*K/mol)
+    if not pd.isnull(Gh) and charge == 0:
+        HKFc2 = 21.4+(0.849*Gh)  # Eq 14 in Plyasunov and Shock 2001
+    elif not pd.isnull(Cp) and charge != 0:
+        # Eq 89 in Shock and Helgeson 1988
+        HKFc2 = (0.2037*(Cp/4.184) - 3.0346)*4.184
+    else:
+        HKFc2 = float(&#39;NaN&#39;)
+
+    # find c1 (j/mol*K)
+    # Eq 31 in Shock and Helgeson 1988, rearranged to solve for c1
+    HKFc1 = cp_nonsolv-(((HKFc2)/10**-4)*(1/(298.15-228))**2)
+
+    # find a3 (j*K/mol*bar)
+    # Eq 11 in Shock and Helgeson 1988, rearranged to solve for a3. V is divided by 10 due to the conversion of 10 cm3 = J/bar
+    HKFa3 = (((V/10)-(HKFa1/10)-((HKFa2/10**-2)/2601) +
+            ((HKFomega/10**-5)*QBorn))/(1/(298.15-228)))-((HKFa4/10**-4)/2601)
+
+    if J_to_cal:
+        conv = 4.184
+    else:
+        conv = 1
+
+    out = {
+        &#34;G&#34;: (Gf/conv)*1000,
+        &#34;H&#34;: (Hf/conv)*1000,
+        &#34;S&#34;: Saq/conv,
+        &#34;Cp&#34;: Cp/conv,
+        &#34;V&#34;: V,
+        &#34;a1&#34;: HKFa1/conv,
+        &#34;a2&#34;: HKFa2/conv,
+        &#34;a3&#34;: HKFa3/conv,
+        &#34;a4&#34;: HKFa4/conv,
+        &#34;c1&#34;: HKFc1/conv,
+        &#34;c2&#34;: HKFc2/conv,
+        &#34;omega&#34;: HKFomega/conv,
+        &#34;Z&#34;: charge,
+        &#34;Vsolv&#34;: V_solv,
+        &#34;Vnonsolv&#34;: V_nonsolv,
+        &#34;sigma&#34;: HKFsigma}
+
+    return out
+
+
+def find_HKF_test():
+    
+    &#34;&#34;&#34;
+    Test the HKF estimation function by regenerating published values.
+    &#34;&#34;&#34;
+    
+    print(&#34;phenolate&#34;, find_HKF(Gh=-80.74, V=68.16, Cp=105, Gf=5.795, Hf=-129.0, Saq=76.6, charge=-1))
+    print(&#34;phenolate, 1988 method&#34;, find_HKF(Gh=float(&#39;NaN&#39;), V=68.16, Cp=105, Gf=5.795, Hf=-129.0, Saq=76.6, charge=-1))
+
+    print(&#34;Be+2&#34;, find_HKF(V=-25.4, Cp=-1.3*4.184, Gf=(-83500*4.184) /
+                                1000, Hf=(-91500*4.184)/1000, Saq=-55.7*4.184, charge=2))
+    print(&#34;NH4+&#34;, find_HKF(V=18.13, Cp=15.74*4.184, Gf=(-18990*4.184) /
+                                1000, Hf=(-31850*4.184)/1000, Saq=26.57*4.184, charge=1))
+    print(&#34;Li+&#34;, find_HKF(V=-0.87, Cp=14.2*4.184, Gf=(-69933*4.184) /
+                               1000, Hf=(-66552*4.184)/1000, Saq=2.70*4.184, charge=1))
+
+    # Compare to table 4 of Plyasunov and Shock 2001
+    # (may be slightly different due to using Eq 16 in Sverjensky et al 2014 for calculating a1)
+    print(&#34;SO2&#34;, find_HKF(Gh=-0.51, V=39.0,
+                               Cp=146, charge=0, J_to_cal=False))
+    print(&#34;Pyridine&#34;, find_HKF(Gh=-11.7, V=77.1,
+                                    Cp=306, charge=0, J_to_cal=False))
+    print(&#34;1,4-Butanediol&#34;, find_HKF(Gh=-37.7, V=88.23,
+                                          Cp=347, charge=0, J_to_cal=False))
+    print(&#34;beta-alanine&#34;, find_HKF(Gh=-74, V=58.7,
+                                        Cp=76, charge=0, J_to_cal=False))
+
+
+def find_sigfigs(x):
+    
+    &#39;&#39;&#39;
+    Get the number of significant digits in a string representing a number up to
+    eight digits long.
+
+    Parameters
+    ----------
+    x : str
+        A string denoting a number. This can include scientific notation.
+    
+    Parameters
+    ----------
+    int
+        The number of significant digits.
+    
+    Examples
+    --------
+    &gt;&gt;&gt; find_sigfigs(&#34;5.220&#34;)
+    4
+    
+    This also takes into account scientific notation.
+    
+    &gt;&gt;&gt; find_sigfigs(&#34;1.23e+3&#34;)
+    3
+    
+    Insignificant zeros are ignored.
+    
+    &gt;&gt;&gt; find_sigfigs(&#34;4000&#34;)
+    1
+    
+    A decimal point denotes that zeros are significant.
+    
+    &gt;&gt;&gt; find_sigfigs(&#34;4000.&#34;)
+    4
+    &#39;&#39;&#39;
+    
+    x = str(x)
+    
+    # change all the &#39;E&#39; to &#39;e&#39;
+    x = x.lower()
+    if (&#39;-&#39; == x[0]):
+        x = x[1:]
+    if (&#39;e&#39; in x):
+        # return the length of the numbers before the &#39;e&#39;
+        myStr = x.split(&#39;e&#39;)
+        return len(myStr[0]) - 1  # to compenstate for the decimal point
+    else:
+        # put it in e format and return the result of that
+        ### NOTE: because of the 8 below, it may do crazy things when it parses 9 sigfigs
+        n = (&#39;%.*e&#39; % (8, float(x))).split(&#39;e&#39;)
+        # remove and count the number of removed user added zeroes. (these are sig figs)
+        if &#39;.&#39; in x:
+            s = x.replace(&#39;.&#39;, &#39;&#39;)
+            #number of zeroes to add back in
+            l = len(s) - len(s.rstrip(&#39;0&#39;))
+            #strip off the python added zeroes and add back in the ones the user added
+            n[0] = n[0].rstrip(&#39;0&#39;) + &#39;&#39;.join([&#39;0&#39; for num in range(l)])
+        else:
+            #the user had no trailing zeroes so just strip them all
+            n[0] = n[0].rstrip(&#39;0&#39;)
+        #pass it back to the beginning to be parsed
+    return find_sigfigs(&#39;e&#39;.join(n))
+
+
+class Estimate():
+    
+    &#34;&#34;&#34;
+    Estimate thermodynamic properties of an aqueous organic molecule.
+    
+    Parameters
+    ----------
+    name : str
+        Name of the aqueous organic molecule that will have its thermodynamic
+        properties estimated.
+    
+    ig_method : str, default &#34;Joback&#34;
+        Group contribution method for estimating ideal gas properties. Accepts
+        &#34;Joback&#34; or &#34;Benson&#34;.
+                       
+    show : bool, default True
+        Show a diagram of the molecule?
+    
+    group_data : str, optional
+        Name of a CSV containing custom group contribution data.
+    
+    test : bool, default False
+        Perform a simple group matching test instead of estimating properties?
+    
+    **kwargs : numeric or str, optional
+        Known standard state partial molal thermodynamic properties at 298.15 K
+        and 1 bar. These will not be estimated, but instead will be used to
+        estimate other properties and parameters. Valid **kwargs include:
+        
+        - Gh : Gibbs free energy change of hydration, kJ/mol.
+        - Hh : Enthalpy change of hydration, kJ/mol.
+        - Sh : Entropy change of hydration, J/mol/K.
+        - Cph : Heat capacity change of hydration, J/mol/K.
+        - V : Volume change of hydration, cm3/mol.
+        - Gh_err : Error associated with Gh (default 0 kJ/mol).
+        - Hh_err : Error associated with Hh (default 0 kJ/mol).
+        - Sh_err : Error associated with Sh (default 0 J/mol/K).
+        - Cph_err : Error associated with Cph (default 0 J/mol/K).
+        - V_err : error associated with V (default 0 cm3/mol).
+        - Gig : Ideal gas Gibbs free energy of formation, kJ/mol.
+        - Hig : Ideal gas enthalpy of formation, kJ/mol.
+        - Sig : Ideal gas entropy, J/mol/K.
+        - Cpig : Ideal gas isobaric heat capacity, J/mol/K.
+        - Gaq : Aqueous Gibbs free energy of formation, kJ/mol.
+        - Haq : Aqueous enthalpy of formation, kJ/mol.
+        - Saq : Aqueous entropy, J/mol/K.
+        - Cpaq : Aqueous isobaric heat capacity, J/mol/K.
+    
+    Attributes
+    ----------
+    pcp_compound : pcp.get_compounds()
+        PubChemPy compound object.
+        
+    smiles : str
+        Canonical SMILES string.
+        
+    formula : str
+        Molecular formula.
+        
+    formula_dict : dict
+        Dictionary of element abundance in the molecular formula.
+        
+    element_data : pd.DataFrame()
+        Table of element data adapted from Jeff Dick&#39;s CHNOSZ package for R.
+        
+    Selements : numeric
+        Sum of the contributions of the entropies of the elements according to
+        Cox, J. D., Wagman, D. D., &amp; Medvedev, V. A. (1989). CODATA key values
+        for thermodynamics. Chem/Mats-Sci/E.
+        
+    note : str
+        Notes and warnings associated with the estimation.
+        
+    charge : numeric
+        The charge of the molecule.
+        
+    OBIGT : pd.DataFrame()
+        Table of estimated thermodynamic properties and parameters. The format
+        is styled after Jeff Dick&#39;s OBIGT thermodynamic table in the CHNOSZ
+        package (see https://chnosz.net/manual/thermo.html).
+    
+    &#34;&#34;&#34;
+    
+    def __init__(self, name, ig_method = &#34;Joback&#34;, show=True, group_data=None,
+                       test=False, **kwargs):
+                       # E_units=&#34;J&#34; # not implemented... tricky because groups
+                                     # are in both kJ and J units.
+
+        self.name = name
+        self.ig_method = ig_method
+        
+        # valid kwargs
+        self.Gh = None
+        self.Hh = None
+        self.Sh = None
+        self.Cph = None
+        self.V = None
+        self.Gh_err = 0
+        self.Hh_err = 0
+        self.Sh_err = 0
+        self.Cph_err = 0
+        self.V_err = 0
+        self.Gig = None
+        self.Hig = None
+        self.Sig = None
+        self.Cpig = None
+        self.Gaq = None
+        self.Haq = None
+        self.Saq = None
+        self.Cpaq = None
+
+        for key, value in kwargs.items():
+            self.__setattr__(key, value)
+        
+        # load group contribution data
+        if group_data == None:
+            group_data = pkg_resources.resource_stream(__name__, &#34;data/group_contribution_data.csv&#34;)
+        elif &#39;.csv&#39; in group_data:
+            pass
+        else:
+            raise Exception(&#34;group_data must be a CSV file.&#34;)
+        self.__load_group_data(group_data)
+        
+        # look up compound on PubChem
+        self.pcp_compound = pcp.get_compounds(self.name, &#34;name&#34;)
+        if len(self.pcp_compound) == 0:
+            raise Exception(&#34;Could not find &#39;&#34; + self.name + &#34;&#39; in PubChem&#39;s online database.&#34;)
+        self.smiles = self.pcp_compound[0].canonical_smiles
+        self.formula = self.pcp_compound[0].molecular_formula
+        self.formula_dict = parse_formula(self.formula)
+        
+        if &#34;-&#34; in self.formula_dict.keys() or &#34;+&#34; in self.formula_dict.keys():
+            mssg = self.name + &#34; cannot be estimated because it has a net charge.&#34;
+            raise Exception(mssg)
+
+        if show:
+            self.__display_molecule()
+
+        if test:
+            print(self.__test_group_match())
+        else:
+            # load properties of the elements
+            # Cox, J. D., Wagman, D. D., and Medvedev, V. A., CODATA Key Values
+            # for Thermodynamics, Hemisphere Publishing Corp., New York, 1989.
+            # Compiled into a CSV by Jeffrey Dick for CHNOSZ
+            element_data = pd.read_csv(pkg_resources.resource_stream(__name__, &#39;data/element.csv&#39;), index_col=&#34;element&#34;)
+            self.element_data = element_data.loc[element_data[&#39;source&#39;] == &#34;CWM89&#34;]
+            
+            self.Selements = self.__entropy()
+            self.note = &#34;&#34;
+            self.charge = 0 # !
+            
+            self.OBIGT = self.__estimate()
+
+    def __load_group_data(self, db_filename):
+        self.group_data = pd.read_csv(db_filename, dtype=str)
+        self.group_data[&#39;elem&#39;] = self.group_data[&#39;elem&#39;].fillna(&#39;&#39;)
+        self.pattern_dict = pd.Series(self.group_data[&#34;elem&#34;].values,
+                                      index=self.group_data[&#34;smarts&#34;]).to_dict()
+        self.group_data = self.group_data.set_index(&#34;smarts&#34;)
+
+        
+    def __set_groups(self):
+        
+        self.group_matches = pd.DataFrame(self.__match_groups(), index=[self.name])
+
+        # remove columns with no matches
+        self.group_matches = self.group_matches.loc[:, (self.group_matches.sum(axis=0) != 0)]
+        
+        # get a list of relevent groups
+        self.groups = [grp for grp in self.group_matches.columns if grp != &#34;formula&#34;]
+        
+
+    def __entropy(self, unit=&#34;J/mol/K&#34;):
+        
+        &#34;&#34;&#34;
+        Calculate the standard molal entropy of elements in a molecule.
+        &#34;&#34;&#34;
+
+        entropies = [(self.element_data.loc[elem, &#34;s&#34;]/self.element_data.loc[elem, &#34;n&#34;])*self.formula_dict[elem] for elem in list(self.formula_dict.keys())]
+        if unit == &#34;J/mol/K&#34;:
+            unit_conv = 4.184
+        elif unit == &#34;cal/mol/K&#34;:
+            unit_conv = 1
+        else:
+            print(&#34;Warning in entropy: specified unit&#34;, unit,
+                  &#34;is not recognized. Returning entropy in J/mol/K&#34;)
+            unit_conv = 4.184
+            
+        return sum(entropies)*unit_conv
+
+    
+    def __dict_to_formula(self, formula_dict):
+        
+        &#34;&#34;&#34;
+        Convert a formula dictionary into a formula string.
+        Example:
+        ```dict_to_formula(parse_formula(&#34;CO3-2&#34;))```
+        &#34;&#34;&#34;
+        
+        formula_string = &#34;&#34;
+        for key in formula_dict.keys():
+            if abs(formula_dict[key]) == 1:
+                v = &#34;&#34;
+            else:
+                v = formula_dict[key]
+                if (v).is_integer():
+                    v = int(v)
+
+            formula_string = formula_string + str(key) + str(v)
+        return formula_string
+
+    
+    def __match_groups(self, show=False, save=False):
+        patterns = self.pattern_dict.keys()
+        mol = Chem.MolFromSmiles(self.smiles)
+
+        match_dict = dict(zip(patterns, [0]*len(patterns))) # initialize match_dict
+        for pattern in patterns:
+            if pattern != &#34;Yo&#34;: # never match material point
+                try:
+                    match_dict[pattern] = len(mol.GetSubstructMatches(Chem.MolFromSmarts(pattern)))
+                except:
+                    print(&#34;Warning in match_groups(): problem&#34;,
+                          &#34;identifying SMARTS group&#34;, pattern,
+                          &#34;. Skipping this group.&#34;)
+
+        ### check that total formula of groups matches that of the molecule
+        
+        # create a dictionary of element matches
+        total_formula_dict = {}
+        for match in match_dict.keys():
+            this_match = parse_formula(self.pattern_dict[match])
+            for element in this_match.keys():
+                this_match[element] *= match_dict[match]
+                if element in total_formula_dict:
+                    total_formula_dict[element] += this_match[element]
+                else:
+                    total_formula_dict[str(element)] = 0
+                    total_formula_dict[element] += this_match[element]
+        
+        # remove keys of elements with a value of 0 (e.g. &#34;H&#34;:0.0)
+        for key in list(total_formula_dict.keys()):
+            if total_formula_dict[key] == 0.0:
+                total_formula_dict.pop(key, None)
+        
+        # retrieve individual charges that contribute to net charge
+        atomic_info = self.pcp_compound[0].record[&#34;atoms&#34;]
+        chargedict = {}
+        if &#34;charge&#34; in atomic_info.keys():
+            all_charges = [chargedict.get(&#34;value&#34;, 0) for chargedict in atomic_info[&#34;charge&#34;]]
+            pos_charge = sum([charge for charge in all_charges if charge &gt; 0])
+            neg_charge = abs(sum([charge for charge in all_charges if charge &lt; 0]))
+            if pos_charge &gt; 0:
+                chargedict[&#39;+&#39;]=float(pos_charge)
+            if neg_charge &gt; 0:
+                chargedict[&#39;-&#39;]=float(neg_charge)
+        else:
+            chargedict = {}
+
+        # perform the comparison
+        test_dict = parse_formula(self.pcp_compound[0].molecular_formula)
+        test_dict.update(chargedict)
+        if total_formula_dict != test_dict:
+            mssg = &#34;The formula of &#34; + self.name + \
+                &#34; does not equal the the elemental composition of the &#34; + \
+                &#34;matched groups. This could be because the database &#34; + \
+                &#34;is missing representative groups.\nFormula of &#34; + \
+                self.name + &#34;:\n&#34;
+            pcp_dict = parse_formula(self.pcp_compound[0].molecular_formula)
+            pcp_dict.update(chargedict)
+            mssg = mssg + str(pcp_dict) + &#34;\nTotal formula of group matches:\n&#34; + \
+                str(total_formula_dict)
+            raise Exception(mssg)
+        
+        # add molecular formula to match dictionary
+        match_dict[&#34;formula&#34;] = self.__dict_to_formula(total_formula_dict)
+        
+        return match_dict
+
+    
+    def __display_molecule(self, show=True, save=False):
+        mol_smiles = Chem.MolFromSmiles(self.smiles)
+        
+        mc = Chem.Mol(mol_smiles.ToBinary())
+        molSize=(450, 150)
+        
+        if not mc.GetNumConformers():
+            #Compute 2D coordinates
+            rdDepictor.Compute2DCoords(mc)
+        # init the drawer with the size
+        drawer = rdMolDraw2D.MolDraw2DSVG(molSize[0],molSize[1])
+        #draw the molcule
+        drawer.DrawMolecule(mc)
+        drawer.FinishDrawing()
+        # get the SVG string
+        svg = drawer.GetDrawingText()
+
+        if show:
+            # fix the svg string and display it
+            display(SVG(svg.replace(&#39;svg:&#39;,&#39;&#39;)))
+
+        if save:
+            os.makedirs(&#34;mol_svg&#34;, exist_ok=True)
+            os.makedirs(&#34;mol_png&#34;, exist_ok=True)
+            #Draw.MolToFile( mol, &#34;mol_svg/&#34;+self.name+&#34;.svg&#34; )
+            Draw.MolToFile(mol_smiles, &#34;mol_png/&#34;+self.name+&#34;.png&#34;)
+    
+    def __BensonHSCp(self, print_groups=False):
+        this_smile = self.pcp_compound[0].canonical_smiles
+        lib = GroupLibrary.Load(&#39;BensonGA&#39;)
+        descriptors = lib.GetDescriptors(this_smile)
+        if print_groups:
+            print(descriptors)
+        thermochem = lib.Estimate(descriptors,&#39;thermochem&#39;)
+        H = thermochem.get_H(298.15, units=&#34;kJ/mol&#34;)
+        S = thermochem.get_S(298.15, units=&#34;J/mol/K&#34;)
+        Cp = thermochem.get_Cp(298.15, units=&#34;J/mol/K&#34;)
+        return H, S, Cp
+
+    
+    def __test_group_match(self):
+        match_dict = self.__match_groups()
+        return {key:value for key,value in zip(match_dict.keys(), match_dict.values()) if value !=0}
+
+            
+    def __est_calcs(self):
+
+        props = [&#34;Gh&#34;, &#34;Hh&#34;, &#34;Sh&#34;, &#34;Cph&#34;, &#34;V&#34;]
+
+        for prop in props:
+            if self.__getattribute__(prop) == None:
+                err_str = prop + &#34;_err&#34;
+
+                # derive Sh, entropy of hydration, in J/mol K
+                if prop == &#34;Sh&#34;:
+                    # Entropy calculated from S = (G-H)/(-Tref)
+                    mol_prop = (float(self.Gh) - float(self.Hh))/(-298.15)
+                    mol_prop = mol_prop*1000 # convert kJ/molK to J/molK
+
+                    # propagate error from Gh and Hh to estimate Sh error.
+                    # equation used: Sh_err = Sh*sqrt((Gh_err/Gh)^2 + (Hh_err/Hh)^2)
+                    Gh_err_float = float(self.Gh_err)/float(self.Gh)
+                    Hh_err_float = float(self.Hh_err)/float(self.Hh)
+                    mol_err = abs(mol_prop)*math.sqrt(Gh_err_float**2 + Hh_err_float**2)
+
+                    # check whether Gh or Hh as the fewest sigfigs
+                    sf = min([find_sigfigs(self.Gh), find_sigfigs(self.Hh)])
+
+                    # round Sh to this number of sigfigs
+                    mol_prop = sigfig.round(str(mol_prop), sigfigs=sf)
+
+                    # check how many decimal places Sh has after sigfig rounding
+                    if &#34;.&#34; in mol_prop:
+                        this_split = mol_prop.split(&#34;.&#34;)
+                        n_dec = len(this_split[len(this_split)-1])
+                    else:
+                        n_dec = 0
+
+                    # assign Sh and Sh_err
+                    #self.__setattr__(prop, mol_prop) # for trailing zeros, but must store Sh as str.
+                    #self.__setattr__(err_str, format(mol_err, &#39;.&#39;+str(n_dec)+&#39;f&#39;)) # for trailing zeros, but must store Sh_err as str.
+                    self.__setattr__(prop, float(mol_prop))
+                    self.__setattr__(err_str, round(float(mol_err), n_dec))
+
+
+                    continue
+
+                # For all properties except for Sh:
+                # initialize variables and lists
+                mol_prop = 0
+                mol_err = 999
+                prop_errs = []
+                n_dec = 999
+                error_groups = []
+
+                for group in self.groups:
+
+                    try:
+                        contains_group = self.group_matches.loc[self.name, group][0] != 0
+                    except:
+                        contains_group = self.group_matches.loc[self.name, group] != 0
+
+                    # if this molecule contains this group...
+                    if contains_group:
+
+                        try:
+                            # add number of groups multiplied by its contribution
+                            mol_prop += self.group_matches.loc[self.name, group] * float(self.group_data.loc[group, prop])
+
+                            # round property to smallest number of decimal places
+                            if &#34;.&#34; in self.group_data.loc[group, prop]:
+                                this_split = self.group_data.loc[group, prop].split(&#34;.&#34;)
+                                n_dec_group = len(this_split[len(this_split)-1])
+                            else:
+                                n_dec_group = 0
+
+                            if n_dec_group &lt; n_dec:
+                                n_dec = n_dec_group
+
+                            # handle group std errors
+                            try:
+                                float(self.group_data.loc[group, err_str]) # assert that this group&#39;s error is numeric
+                                prop_errs.append(self.group_data.loc[group, err_str]) # append error
+                            except:
+                                # if group&#39;s error is non-numeric, pass
+                                pass
+
+                        except:
+                            error_groups.append(group)
+
+                if len(error_groups) == 0:
+
+                    # add Y0
+                    mol_prop += float(self.group_data.loc[&#34;Yo&#34;, prop])
+
+                    # propagate error of summed groups: sqrt(a**2 + b**2 + ...)
+                    mol_err = round(math.sqrt(sum([float(err)**2 for err in prop_errs])), n_dec)
+
+#                     # format output as string (preserves trailing zeros)
+#                     mol_prop = format(mol_prop, &#39;.&#39;+str(n_dec)+&#39;f&#39;)
+#                     mol_err = format(mol_err, &#39;.&#39;+str(n_dec)+&#39;f&#39;)
+
+                    self.__setattr__(prop, mol_prop)
+                    self.__setattr__(err_str, mol_err)
+
+                else:
+                    message1 = self.name + &#34; encountered errors with group(s): &#34; + str(error_groups) + &#34;.&#34;
+                    message2 = &#34;Are these groups assigned properties in the data file? ;&#34;
+                    self.note = self.note + message1 + &#34; &#34; + message2
+                    print(message1)
+                    print(message2)
+        
+        ig_gas_error = False
+        if self.Gig != None and self.Hig != None and self.Sig != None and self.Cpig != None:
+            # no ideal gas estimation needed.
+            # TODO: Modify if statement to allow calculating remainder if
+            # two out of three are provided for: Gig, Hig, Sig
+            pass
+        elif self.ig_method == &#34;Joback&#34;:
+            # Joback estimation of the Gibbs free energy of formation of the
+            # ideal gas (Joule-based).
+            try:
+
+                J = thermo.Joback(Chem.MolFromSmiles(self.smiles))
+                J_estimate = J.estimate()
+                if self.Gig == None:
+                    self.Gig = J_estimate[&#39;Gf&#39;]/1000
+                if self.Hig == None:
+                    self.Hig = J_estimate[&#39;Hf&#39;]/1000
+                if self.Sig == None:
+                    self.Sig = ((float(self.Gig) - float(self.Hig))/-298.15)*1000 + self.Selements
+                if self.Cpig == None:
+                    self.Cpig = J_estimate[&#39;Cpig&#39;](T=298.15)
+            except:
+                ig_gas_error = True
+
+        elif self.ig_method == &#34;Benson&#34;:
+            # Benson estimation of the Gibbs free energy of formation of
+            # the ideal gas (Joule-based).
+            try:
+                Hig_ben, Sig_ben, Cpig_ben = self.__BensonHSCp()
+                if self.Hig == None:
+                    self.Hig = Hig_ben
+                if self.Sig == None:
+                    self.Sig = Sig_ben
+                if self.Cpig == None:
+                    self.Cpig == Cpig_ben
+                delta_Sig = self.Sig - self.Selements
+                if self.Gig == None:
+                    self.Gig = self.Hig - 298.15*delta_Sig/1000
+            except:
+                ig_gas_error = True
+        else:
+            print(&#34;Error! The ideal gas property estimation method&#34;, self.ig_method, &#34;is not recognized. Try &#39;Joback&#39; or &#39;Benson&#39;.&#34;)
+
+        if ig_gas_error:
+            msg = &#34;The properties of aqueous &#34;+self.name+&#34; could not be &#34; + \
+                &#34;estimated because its ideal gas properties could not be &#34; + \
+                &#34;estimated with the &#34;+self.ig_method+&#34; method.&#34;
+            raise Exception(msg)
+                
+        # estimate the Gibbs free energy of formation of the aqueous molecule by summing
+        # its ideal gas and hydration properties.
+        # TODO: if ideal gas properties are NaN, ensure aqueous properties are too.
+        # TODO: determine estimation error of ideal gas, then propagate with hydration errors.
+        # TODO: propagate errors into HKF parameter estimations.
+        
+        try:
+            if self.Gaq == None:
+                self.Gaq = float(self.Gig) + float(self.Gh)
+        except:
+            self.Gaq = float(&#34;NaN&#34;)
+
+        try:
+            if self.Haq == None:
+                self.Haq = float(self.Hig) + float(self.Hh)
+        except:
+            self.Haq = float(&#34;NaN&#34;)
+
+        try:
+            if self.Saq == None:
+                self.Saq = ((float(self.Gaq) - float(self.Haq))/-298.15)*1000 + self.Selements
+        except:
+            self.Saq = float(&#34;NaN&#34;)
+        try:
+            if self.Cpaq == None:
+                self.Cpaq = self.Cpig + float(self.Cph)
+        except:
+            self.Cpaq = float(&#34;NaN&#34;) 
+
+        # calculate HKF parameters
+        try:
+            hkf_dict = find_HKF(Gh=float(self.Gh),
+                                V=float(self.V),
+                                Cp=float(self.Cpaq),
+                                Gf=float(self.Gaq),
+                                Hf=float(self.Haq),
+                                Saq=float(self.Saq),
+                                charge=float(self.charge),
+                                J_to_cal=False)
+            for param in hkf_dict.keys():
+                self.__setattr__(param, hkf_dict[param])
+
+        except:
+            print(&#34;Could not calculate HKF parameters for&#34;, self.name)
+            pass
+
+    # convert dataframe into an OBIGT table with an option to write to a csv file.
+    def __convert_to_OBIGT(self):
+        
+        df = pd.DataFrame({&#39;name&#39;:self.name,
+                           &#39;abbrv&#39;:self.formula,
+                           &#39;formula&#39;:self.formula,
+                           &#39;state&#39;:&#39;aq&#39;,
+                           &#39;ref1&#39;:&#39;AqOrg&#39;,
+                           &#39;ref2&#39;:&#39;GrpAdd&#39;,
+                           &#39;date&#39;:datetime.now().strftime(&#34;%d/%m/%Y %H:%M:%S&#34;),
+                           &#39;E_units&#39;:&#39;J&#39;,
+                           &#39;G&#39;:float(self.Gaq)*1000,
+                           &#39;H&#39;:float(self.Haq)*1000,
+                           &#39;S&#39;:float(self.Saq),
+                           &#39;Cp&#39;:float(self.Cpaq),
+                           &#39;V&#39;:float(self.V),
+                           &#39;a1.a&#39;:float(self.a1),
+                           &#39;a2.b&#39;:float(self.a2),
+                           &#39;a3.c&#39;:float(self.a3),
+                           &#39;a4.d&#39;:float(self.a4),
+                           &#39;c1.e&#39;:float(self.c1),
+                           &#39;c2.f&#39;:float(self.c2),
+                           &#39;omega.lambda&#39;:float(self.omega),
+                           &#39;z.T&#39;:self.charge}, index=[0])
+
+        return df.set_index(&#39;name&#39;)
+
+
+    def __estimate(self):
+        self.__set_groups()
+        self.__est_calcs()
+        return self.__convert_to_OBIGT()</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="AqOrg.AqOrg.find_HKF"><code class="name flex">
+<span>def <span class="ident">find_HKF</span></span>(<span>Gh=nan, V=nan, Cp=nan, Gf=nan, Hf=nan, Saq=nan, charge=nan, J_to_cal=True)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Estimate HKF parameters from standard state thermodynamic properties of an
+aqueous organic molecule.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>Gh</code></strong> :&ensp;<code>numeric</code></dt>
+<dd>Standard state partial molal Gibbs free energy of hydration in kJ/mol.</dd>
+<dt><strong><code>V</code></strong> :&ensp;<code>numeric</code></dt>
+<dd>Standard state partial molal volume in cm3/mol.</dd>
+<dt><strong><code>Cp</code></strong> :&ensp;<code>numeric</code></dt>
+<dd>Standard state partial molal heat capacity in J/mol/K.</dd>
+<dt><strong><code>Gf</code></strong> :&ensp;<code>numeric</code></dt>
+<dd>Standard state partial molal Gibbs free energy of formation in kJ/mol.</dd>
+<dt><strong><code>Hf</code></strong> :&ensp;<code>numeric</code></dt>
+<dd>Standard state partial molal enthalpy of formation in kJ/mol.</dd>
+<dt><strong><code>Saq</code></strong> :&ensp;<code>numeric</code></dt>
+<dd>Standard state partial molal third law entropy in J/mol/K.</dd>
+<dt><strong><code>charge</code></strong> :&ensp;<code>numeric</code></dt>
+<dd>The charge of the molecule.</dd>
+<dt><strong><code>J_to_cal</code></strong> :&ensp;<code>bool</code>, default <code>True</code></dt>
+<dd>Should the output be calorie-based? kJ/mol will be converted to cal/mol
+and J/mol/K will be converted to cal/mol/K.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>out</code></strong> :&ensp;<code>dict</code></dt>
+<dd>A dictonary of properties and parameters. These will either be
+Joule-based or calorie-based depending on the parameter <code>J_to_cal</code>.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def find_HKF(Gh=float(&#39;NaN&#39;), V=float(&#39;NaN&#39;), Cp=float(&#39;NaN&#39;),
+             Gf=float(&#39;NaN&#39;), Hf=float(&#39;NaN&#39;), Saq=float(&#39;NaN&#39;),
+             charge=float(&#39;NaN&#39;), J_to_cal=True):
+    
+    &#34;&#34;&#34;
+    Estimate HKF parameters from standard state thermodynamic properties of an
+    aqueous organic molecule.
+    
+    Parameters
+    ----------
+    Gh : numeric
+        Standard state partial molal Gibbs free energy of hydration in kJ/mol.
+    
+    V : numeric
+        Standard state partial molal volume in cm3/mol.
+    
+    Cp : numeric
+        Standard state partial molal heat capacity in J/mol/K.
+    
+    Gf : numeric
+        Standard state partial molal Gibbs free energy of formation in kJ/mol.
+    
+    Hf : numeric
+        Standard state partial molal enthalpy of formation in kJ/mol.
+    
+    Saq : numeric
+        Standard state partial molal third law entropy in J/mol/K.
+    
+    charge : numeric
+        The charge of the molecule.
+    
+    J_to_cal : bool, default True
+        Should the output be calorie-based? kJ/mol will be converted to cal/mol
+        and J/mol/K will be converted to cal/mol/K.
+        
+    Returns
+    ----------
+    out : dict
+        A dictonary of properties and parameters. These will either be
+        Joule-based or calorie-based depending on the parameter `J_to_cal`.
+    &#34;&#34;&#34;
+
+    # define eta (angstroms*cal/mol)
+    eta = (1.66027*10**5)
+
+    # define YBorn (1/K)
+    YBorn = -5.81*10**-5
+
+    # define QBorn (1/bar)
+    QBorn = 5.90*10**-7
+
+    # define XBorn (1/K^2)
+    XBorn = -3.09*10**-7
+
+    # define abs_protonBorn (cal/mol), mentioned in text after Eq 47 in Shock and Helgeson 1988
+    abs_protonBorn = (0.5387 * 10**5)
+
+    if not pd.isnull(Gh) and charge == 0:
+
+        # find omega*10^-5 (j/mol) if neutral and Gh available
+        # Eq 8 in Plyasunov and Shock 2001
+        HKFomega = 2.61+(324.1/(Gh-90.6))
+
+    elif charge == 0:
+
+        # find omega*10^-5 (j/mol) if neutral and Gh unavailable
+        # Eq 61 in Shock and Helgeson 1990 for NONVOLATILE neutral organic species
+        HKFomega = (10 ^ -5)*((-1514.4*(Saq/4.184)) + (0.34*10**5))*4.184
+
+    elif charge != 0:
+
+        # define alphaZ (described in text after Eq 59 in Shock and Helgeson 1990)
+        if (abs(charge) == 1):
+            alphaZ = 72
+        elif (abs(charge) == 2):
+            alphaZ = 141
+        elif (abs(charge) == 3):
+            alphaZ = 211
+        elif (abs(charge) == 4):
+            alphaZ = 286
+        else:
+            alphaZ = float(&#39;NaN&#39;)
+
+        # define BZ
+        BZ = ((-alphaZ*eta)/(YBorn*eta - 100)) - charge * \
+            abs_protonBorn  # Eq 55 in Shock and Helgeson 1990
+
+        # find ion omega*10^-5, (J/mol) if charged
+        HKFomega = (10 ^ -5)*(-1514.4*(Saq/4.184) + BZ) * \
+            4.184  # Eq 58 in Shock and Helgeson 1990
+
+        ### METHOD FOR INORGANIC AQUEOUS ELECTROLYTES USING SHOCK AND HELGESON 1988:
+
+        # find rej (angstroms), ions only
+        #rej &lt;- ((charge^2)*(eta*YBorn-100))/((Saq/4.184)-71.5*abs(charge)) # Eqs 46+56+57 in Shock and Helgeson 1988
+
+        # find ion absolute omega*10^-5, (cal/mol)
+        #HKFomega_abs_ion &lt;- (eta*(charge^2))/rej # Eq 45 in Shock and Helgeson 1988
+
+        # find ion omega*10^-5, (J/mol)
+        #HKFomega2 &lt;- (10^-5)*(HKFomega_abs_ion-(charge*abs_protonBorn))*4.184 # Eq 47 in Shock and Helgeson 1988
+
+    else:
+        HKFomega = float(&#39;NaN&#39;)
+
+    # find delta V solvation (cm3/mol)
+    # Eq 5 in Shock and Helgeson 1988, along with a conversion of 10 cm3 = 1 joule/bar
+    V_solv = -(HKFomega/10**-5)*QBorn*10
+
+    # find delta V nonsolvation (cm3/mol)
+    V_nonsolv = V - V_solv  # Eq 4 in Shock and Helgeson 1988
+
+    # find sigma (cm3/mol)
+    HKFsigma = 1.11*V_nonsolv + 1.8  # Eq 87 in Shock and Helgeson
+
+    # find delta cp solvation (J/mol*K)
+    # Eq 35 in Shock and Helgeson 1988 dCpsolv = omega*T*X
+    cp_solv = ((HKFomega/10**-5)*298.15*XBorn)
+
+    # find delta cp nonsolvation (J/mol*K)
+    cp_nonsolv = Cp - cp_solv  # Eq 29 in Shock and Helgeson 1988
+
+    if not pd.isnull(Gh) and charge == 0:
+        # find a1*10 (j/mol*bar)
+        # Eq 10 in Plyasunov and Shock 2001
+        HKFa1 = (0.820-((1.858*10**-3)*(Gh)))*V
+        # why is this different than Eq 16 in Sverjensky et al 2014? Regardless, results seem to be very close using this eq vs. Eq 16.
+
+        # find a2*10^-2 (j/mol)
+        # Eq 11 in Plyasunov and Shock 2001
+        HKFa2 = (0.648+((0.00481)*(Gh)))*V
+
+        # find a4*10^-4 (j*K/mol)
+        # Eq 12 in Plyasunov and Shock 2001
+        HKFa4 = 8.10-(0.746*HKFa2)+(0.219*Gh)
+
+    elif charge != 0:
+        # find a1*10 (j/mol*bar)
+        # Eq 16 in Sverjensky et al 2014, after Plyasunov and Shock 2001, converted to J/mol*bar. This equation is used in the DEW model since it works for charged and noncharged species up to 60kb
+        HKFa1 = (0.1942*V_nonsolv + 1.52)*4.184
+
+        # find a2*10^-2 (j/mol)
+        # Eq 8 in Shock and Helgeson, rearranged to solve for a2*10^-2. Sigma is divided by 41.84 due to the conversion of 41.84 cm3 = cal/bar
+        HKFa2 = (10**-2)*(((HKFsigma/41.84) -
+                        ((HKFa1/10)/4.184))/(1/(2601)))*4.184
+
+        # find a4*10^-4 (j*K/mol)
+        # Eq 88 in Shock and Helgeson, solve for a4*10^-4
+        HKFa4 = (10**-4)*(-4.134*(HKFa2/4.184)-27790)*4.184
+
+    else:
+        HKFa1 = float(&#39;NaN&#39;)
+        HKFa2 = float(&#39;NaN&#39;)
+        HKFa3 = float(&#39;NaN&#39;)
+
+    # find c2*10^-4 (j*K/mol)
+    if not pd.isnull(Gh) and charge == 0:
+        HKFc2 = 21.4+(0.849*Gh)  # Eq 14 in Plyasunov and Shock 2001
+    elif not pd.isnull(Cp) and charge != 0:
+        # Eq 89 in Shock and Helgeson 1988
+        HKFc2 = (0.2037*(Cp/4.184) - 3.0346)*4.184
+    else:
+        HKFc2 = float(&#39;NaN&#39;)
+
+    # find c1 (j/mol*K)
+    # Eq 31 in Shock and Helgeson 1988, rearranged to solve for c1
+    HKFc1 = cp_nonsolv-(((HKFc2)/10**-4)*(1/(298.15-228))**2)
+
+    # find a3 (j*K/mol*bar)
+    # Eq 11 in Shock and Helgeson 1988, rearranged to solve for a3. V is divided by 10 due to the conversion of 10 cm3 = J/bar
+    HKFa3 = (((V/10)-(HKFa1/10)-((HKFa2/10**-2)/2601) +
+            ((HKFomega/10**-5)*QBorn))/(1/(298.15-228)))-((HKFa4/10**-4)/2601)
+
+    if J_to_cal:
+        conv = 4.184
+    else:
+        conv = 1
+
+    out = {
+        &#34;G&#34;: (Gf/conv)*1000,
+        &#34;H&#34;: (Hf/conv)*1000,
+        &#34;S&#34;: Saq/conv,
+        &#34;Cp&#34;: Cp/conv,
+        &#34;V&#34;: V,
+        &#34;a1&#34;: HKFa1/conv,
+        &#34;a2&#34;: HKFa2/conv,
+        &#34;a3&#34;: HKFa3/conv,
+        &#34;a4&#34;: HKFa4/conv,
+        &#34;c1&#34;: HKFc1/conv,
+        &#34;c2&#34;: HKFc2/conv,
+        &#34;omega&#34;: HKFomega/conv,
+        &#34;Z&#34;: charge,
+        &#34;Vsolv&#34;: V_solv,
+        &#34;Vnonsolv&#34;: V_nonsolv,
+        &#34;sigma&#34;: HKFsigma}
+
+    return out</code></pre>
+</details>
+</dd>
+<dt id="AqOrg.AqOrg.find_HKF_test"><code class="name flex">
+<span>def <span class="ident">find_HKF_test</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test the HKF estimation function by regenerating published values.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def find_HKF_test():
+    
+    &#34;&#34;&#34;
+    Test the HKF estimation function by regenerating published values.
+    &#34;&#34;&#34;
+    
+    print(&#34;phenolate&#34;, find_HKF(Gh=-80.74, V=68.16, Cp=105, Gf=5.795, Hf=-129.0, Saq=76.6, charge=-1))
+    print(&#34;phenolate, 1988 method&#34;, find_HKF(Gh=float(&#39;NaN&#39;), V=68.16, Cp=105, Gf=5.795, Hf=-129.0, Saq=76.6, charge=-1))
+
+    print(&#34;Be+2&#34;, find_HKF(V=-25.4, Cp=-1.3*4.184, Gf=(-83500*4.184) /
+                                1000, Hf=(-91500*4.184)/1000, Saq=-55.7*4.184, charge=2))
+    print(&#34;NH4+&#34;, find_HKF(V=18.13, Cp=15.74*4.184, Gf=(-18990*4.184) /
+                                1000, Hf=(-31850*4.184)/1000, Saq=26.57*4.184, charge=1))
+    print(&#34;Li+&#34;, find_HKF(V=-0.87, Cp=14.2*4.184, Gf=(-69933*4.184) /
+                               1000, Hf=(-66552*4.184)/1000, Saq=2.70*4.184, charge=1))
+
+    # Compare to table 4 of Plyasunov and Shock 2001
+    # (may be slightly different due to using Eq 16 in Sverjensky et al 2014 for calculating a1)
+    print(&#34;SO2&#34;, find_HKF(Gh=-0.51, V=39.0,
+                               Cp=146, charge=0, J_to_cal=False))
+    print(&#34;Pyridine&#34;, find_HKF(Gh=-11.7, V=77.1,
+                                    Cp=306, charge=0, J_to_cal=False))
+    print(&#34;1,4-Butanediol&#34;, find_HKF(Gh=-37.7, V=88.23,
+                                          Cp=347, charge=0, J_to_cal=False))
+    print(&#34;beta-alanine&#34;, find_HKF(Gh=-74, V=58.7,
+                                        Cp=76, charge=0, J_to_cal=False))</code></pre>
+</details>
+</dd>
+<dt id="AqOrg.AqOrg.find_sigfigs"><code class="name flex">
+<span>def <span class="ident">find_sigfigs</span></span>(<span>x)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get the number of significant digits in a string representing a number up to
+eight digits long.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>x</code></strong> :&ensp;<code>str</code></dt>
+<dd>A string denoting a number. This can include scientific notation.</dd>
+</dl>
+<h2 id="parameters_1">Parameters</h2>
+<dl>
+<dt><strong><code>int</code></strong></dt>
+<dd>The number of significant digits.</dd>
+</dl>
+<h2 id="examples">Examples</h2>
+<pre><code class="language-python-repl">&gt;&gt;&gt; find_sigfigs(&quot;5.220&quot;)
+4
+</code></pre>
+<p>This also takes into account scientific notation.</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; find_sigfigs(&quot;1.23e+3&quot;)
+3
+</code></pre>
+<p>Insignificant zeros are ignored.</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; find_sigfigs(&quot;4000&quot;)
+1
+</code></pre>
+<p>A decimal point denotes that zeros are significant.</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; find_sigfigs(&quot;4000.&quot;)
+4
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def find_sigfigs(x):
+    
+    &#39;&#39;&#39;
+    Get the number of significant digits in a string representing a number up to
+    eight digits long.
+
+    Parameters
+    ----------
+    x : str
+        A string denoting a number. This can include scientific notation.
+    
+    Parameters
+    ----------
+    int
+        The number of significant digits.
+    
+    Examples
+    --------
+    &gt;&gt;&gt; find_sigfigs(&#34;5.220&#34;)
+    4
+    
+    This also takes into account scientific notation.
+    
+    &gt;&gt;&gt; find_sigfigs(&#34;1.23e+3&#34;)
+    3
+    
+    Insignificant zeros are ignored.
+    
+    &gt;&gt;&gt; find_sigfigs(&#34;4000&#34;)
+    1
+    
+    A decimal point denotes that zeros are significant.
+    
+    &gt;&gt;&gt; find_sigfigs(&#34;4000.&#34;)
+    4
+    &#39;&#39;&#39;
+    
+    x = str(x)
+    
+    # change all the &#39;E&#39; to &#39;e&#39;
+    x = x.lower()
+    if (&#39;-&#39; == x[0]):
+        x = x[1:]
+    if (&#39;e&#39; in x):
+        # return the length of the numbers before the &#39;e&#39;
+        myStr = x.split(&#39;e&#39;)
+        return len(myStr[0]) - 1  # to compenstate for the decimal point
+    else:
+        # put it in e format and return the result of that
+        ### NOTE: because of the 8 below, it may do crazy things when it parses 9 sigfigs
+        n = (&#39;%.*e&#39; % (8, float(x))).split(&#39;e&#39;)
+        # remove and count the number of removed user added zeroes. (these are sig figs)
+        if &#39;.&#39; in x:
+            s = x.replace(&#39;.&#39;, &#39;&#39;)
+            #number of zeroes to add back in
+            l = len(s) - len(s.rstrip(&#39;0&#39;))
+            #strip off the python added zeroes and add back in the ones the user added
+            n[0] = n[0].rstrip(&#39;0&#39;) + &#39;&#39;.join([&#39;0&#39; for num in range(l)])
+        else:
+            #the user had no trailing zeroes so just strip them all
+            n[0] = n[0].rstrip(&#39;0&#39;)
+        #pass it back to the beginning to be parsed
+    return find_sigfigs(&#39;e&#39;.join(n))</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="AqOrg.AqOrg.Estimate"><code class="flex name class">
+<span>class <span class="ident">Estimate</span></span>
+<span>(</span><span>name, ig_method='Joback', show=True, group_data=None, test=False, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Estimate thermodynamic properties of an aqueous organic molecule.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>name</code></strong> :&ensp;<code>str</code></dt>
+<dd>Name of the aqueous organic molecule that will have its thermodynamic
+properties estimated.</dd>
+<dt><strong><code>ig_method</code></strong> :&ensp;<code>str</code>, default <code>"Joback"</code></dt>
+<dd>Group contribution method for estimating ideal gas properties. Accepts
+"Joback" or "Benson".</dd>
+<dt><strong><code>show</code></strong> :&ensp;<code>bool</code>, default <code>True</code></dt>
+<dd>Show a diagram of the molecule?</dd>
+<dt><strong><code>group_data</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>Name of a CSV containing custom group contribution data.</dd>
+<dt><strong><code>test</code></strong> :&ensp;<code>bool</code>, default <code>False</code></dt>
+<dd>Perform a simple group matching test instead of estimating properties?</dd>
+<dt><strong><code>**kwargs</code></strong> :&ensp;<code>numeric</code> or <code>str</code>, optional</dt>
+<dd>
+<p>Known standard state partial molal thermodynamic properties at 298.15 K
+and 1 bar. These will not be estimated, but instead will be used to
+estimate other properties and parameters. Valid **kwargs include:</p>
+<ul>
+<li>Gh : Gibbs free energy change of hydration, kJ/mol.</li>
+<li>Hh : Enthalpy change of hydration, kJ/mol.</li>
+<li>Sh : Entropy change of hydration, J/mol/K.</li>
+<li>Cph : Heat capacity change of hydration, J/mol/K.</li>
+<li>V : Volume change of hydration, cm3/mol.</li>
+<li>Gh_err : Error associated with Gh (default 0 kJ/mol).</li>
+<li>Hh_err : Error associated with Hh (default 0 kJ/mol).</li>
+<li>Sh_err : Error associated with Sh (default 0 J/mol/K).</li>
+<li>Cph_err : Error associated with Cph (default 0 J/mol/K).</li>
+<li>V_err : error associated with V (default 0 cm3/mol).</li>
+<li>Gig : Ideal gas Gibbs free energy of formation, kJ/mol.</li>
+<li>Hig : Ideal gas enthalpy of formation, kJ/mol.</li>
+<li>Sig : Ideal gas entropy, J/mol/K.</li>
+<li>Cpig : Ideal gas isobaric heat capacity, J/mol/K.</li>
+<li>Gaq : Aqueous Gibbs free energy of formation, kJ/mol.</li>
+<li>Haq : Aqueous enthalpy of formation, kJ/mol.</li>
+<li>Saq : Aqueous entropy, J/mol/K.</li>
+<li>Cpaq : Aqueous isobaric heat capacity, J/mol/K.</li>
+</ul>
+</dd>
+</dl>
+<h2 id="attributes">Attributes</h2>
+<dl>
+<dt><strong><code>pcp_compound</code></strong> :&ensp;<code>pcp.get_compounds()</code></dt>
+<dd>PubChemPy compound object.</dd>
+<dt><strong><code>smiles</code></strong> :&ensp;<code>str</code></dt>
+<dd>Canonical SMILES string.</dd>
+<dt><strong><code>formula</code></strong> :&ensp;<code>str</code></dt>
+<dd>Molecular formula.</dd>
+<dt><strong><code>formula_dict</code></strong> :&ensp;<code>dict</code></dt>
+<dd>Dictionary of element abundance in the molecular formula.</dd>
+<dt><strong><code>element_data</code></strong> :&ensp;<code>pd.DataFrame()</code></dt>
+<dd>Table of element data adapted from Jeff Dick's CHNOSZ package for R.</dd>
+<dt><strong><code>Selements</code></strong> :&ensp;<code>numeric</code></dt>
+<dd>Sum of the contributions of the entropies of the elements according to
+Cox, J. D., Wagman, D. D., &amp; Medvedev, V. A. (1989). CODATA key values
+for thermodynamics. Chem/Mats-Sci/E.</dd>
+<dt><strong><code>note</code></strong> :&ensp;<code>str</code></dt>
+<dd>Notes and warnings associated with the estimation.</dd>
+<dt><strong><code>charge</code></strong> :&ensp;<code>numeric</code></dt>
+<dd>The charge of the molecule.</dd>
+<dt><strong><code>OBIGT</code></strong> :&ensp;<code>pd.DataFrame()</code></dt>
+<dd>Table of estimated thermodynamic properties and parameters. The format
+is styled after Jeff Dick's OBIGT thermodynamic table in the CHNOSZ
+package (see <a href="https://chnosz.net/manual/thermo.html">https://chnosz.net/manual/thermo.html</a>).</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Estimate():
+    
+    &#34;&#34;&#34;
+    Estimate thermodynamic properties of an aqueous organic molecule.
+    
+    Parameters
+    ----------
+    name : str
+        Name of the aqueous organic molecule that will have its thermodynamic
+        properties estimated.
+    
+    ig_method : str, default &#34;Joback&#34;
+        Group contribution method for estimating ideal gas properties. Accepts
+        &#34;Joback&#34; or &#34;Benson&#34;.
+                       
+    show : bool, default True
+        Show a diagram of the molecule?
+    
+    group_data : str, optional
+        Name of a CSV containing custom group contribution data.
+    
+    test : bool, default False
+        Perform a simple group matching test instead of estimating properties?
+    
+    **kwargs : numeric or str, optional
+        Known standard state partial molal thermodynamic properties at 298.15 K
+        and 1 bar. These will not be estimated, but instead will be used to
+        estimate other properties and parameters. Valid **kwargs include:
+        
+        - Gh : Gibbs free energy change of hydration, kJ/mol.
+        - Hh : Enthalpy change of hydration, kJ/mol.
+        - Sh : Entropy change of hydration, J/mol/K.
+        - Cph : Heat capacity change of hydration, J/mol/K.
+        - V : Volume change of hydration, cm3/mol.
+        - Gh_err : Error associated with Gh (default 0 kJ/mol).
+        - Hh_err : Error associated with Hh (default 0 kJ/mol).
+        - Sh_err : Error associated with Sh (default 0 J/mol/K).
+        - Cph_err : Error associated with Cph (default 0 J/mol/K).
+        - V_err : error associated with V (default 0 cm3/mol).
+        - Gig : Ideal gas Gibbs free energy of formation, kJ/mol.
+        - Hig : Ideal gas enthalpy of formation, kJ/mol.
+        - Sig : Ideal gas entropy, J/mol/K.
+        - Cpig : Ideal gas isobaric heat capacity, J/mol/K.
+        - Gaq : Aqueous Gibbs free energy of formation, kJ/mol.
+        - Haq : Aqueous enthalpy of formation, kJ/mol.
+        - Saq : Aqueous entropy, J/mol/K.
+        - Cpaq : Aqueous isobaric heat capacity, J/mol/K.
+    
+    Attributes
+    ----------
+    pcp_compound : pcp.get_compounds()
+        PubChemPy compound object.
+        
+    smiles : str
+        Canonical SMILES string.
+        
+    formula : str
+        Molecular formula.
+        
+    formula_dict : dict
+        Dictionary of element abundance in the molecular formula.
+        
+    element_data : pd.DataFrame()
+        Table of element data adapted from Jeff Dick&#39;s CHNOSZ package for R.
+        
+    Selements : numeric
+        Sum of the contributions of the entropies of the elements according to
+        Cox, J. D., Wagman, D. D., &amp; Medvedev, V. A. (1989). CODATA key values
+        for thermodynamics. Chem/Mats-Sci/E.
+        
+    note : str
+        Notes and warnings associated with the estimation.
+        
+    charge : numeric
+        The charge of the molecule.
+        
+    OBIGT : pd.DataFrame()
+        Table of estimated thermodynamic properties and parameters. The format
+        is styled after Jeff Dick&#39;s OBIGT thermodynamic table in the CHNOSZ
+        package (see https://chnosz.net/manual/thermo.html).
+    
+    &#34;&#34;&#34;
+    
+    def __init__(self, name, ig_method = &#34;Joback&#34;, show=True, group_data=None,
+                       test=False, **kwargs):
+                       # E_units=&#34;J&#34; # not implemented... tricky because groups
+                                     # are in both kJ and J units.
+
+        self.name = name
+        self.ig_method = ig_method
+        
+        # valid kwargs
+        self.Gh = None
+        self.Hh = None
+        self.Sh = None
+        self.Cph = None
+        self.V = None
+        self.Gh_err = 0
+        self.Hh_err = 0
+        self.Sh_err = 0
+        self.Cph_err = 0
+        self.V_err = 0
+        self.Gig = None
+        self.Hig = None
+        self.Sig = None
+        self.Cpig = None
+        self.Gaq = None
+        self.Haq = None
+        self.Saq = None
+        self.Cpaq = None
+
+        for key, value in kwargs.items():
+            self.__setattr__(key, value)
+        
+        # load group contribution data
+        if group_data == None:
+            group_data = pkg_resources.resource_stream(__name__, &#34;data/group_contribution_data.csv&#34;)
+        elif &#39;.csv&#39; in group_data:
+            pass
+        else:
+            raise Exception(&#34;group_data must be a CSV file.&#34;)
+        self.__load_group_data(group_data)
+        
+        # look up compound on PubChem
+        self.pcp_compound = pcp.get_compounds(self.name, &#34;name&#34;)
+        if len(self.pcp_compound) == 0:
+            raise Exception(&#34;Could not find &#39;&#34; + self.name + &#34;&#39; in PubChem&#39;s online database.&#34;)
+        self.smiles = self.pcp_compound[0].canonical_smiles
+        self.formula = self.pcp_compound[0].molecular_formula
+        self.formula_dict = parse_formula(self.formula)
+        
+        if &#34;-&#34; in self.formula_dict.keys() or &#34;+&#34; in self.formula_dict.keys():
+            mssg = self.name + &#34; cannot be estimated because it has a net charge.&#34;
+            raise Exception(mssg)
+
+        if show:
+            self.__display_molecule()
+
+        if test:
+            print(self.__test_group_match())
+        else:
+            # load properties of the elements
+            # Cox, J. D., Wagman, D. D., and Medvedev, V. A., CODATA Key Values
+            # for Thermodynamics, Hemisphere Publishing Corp., New York, 1989.
+            # Compiled into a CSV by Jeffrey Dick for CHNOSZ
+            element_data = pd.read_csv(pkg_resources.resource_stream(__name__, &#39;data/element.csv&#39;), index_col=&#34;element&#34;)
+            self.element_data = element_data.loc[element_data[&#39;source&#39;] == &#34;CWM89&#34;]
+            
+            self.Selements = self.__entropy()
+            self.note = &#34;&#34;
+            self.charge = 0 # !
+            
+            self.OBIGT = self.__estimate()
+
+    def __load_group_data(self, db_filename):
+        self.group_data = pd.read_csv(db_filename, dtype=str)
+        self.group_data[&#39;elem&#39;] = self.group_data[&#39;elem&#39;].fillna(&#39;&#39;)
+        self.pattern_dict = pd.Series(self.group_data[&#34;elem&#34;].values,
+                                      index=self.group_data[&#34;smarts&#34;]).to_dict()
+        self.group_data = self.group_data.set_index(&#34;smarts&#34;)
+
+        
+    def __set_groups(self):
+        
+        self.group_matches = pd.DataFrame(self.__match_groups(), index=[self.name])
+
+        # remove columns with no matches
+        self.group_matches = self.group_matches.loc[:, (self.group_matches.sum(axis=0) != 0)]
+        
+        # get a list of relevent groups
+        self.groups = [grp for grp in self.group_matches.columns if grp != &#34;formula&#34;]
+        
+
+    def __entropy(self, unit=&#34;J/mol/K&#34;):
+        
+        &#34;&#34;&#34;
+        Calculate the standard molal entropy of elements in a molecule.
+        &#34;&#34;&#34;
+
+        entropies = [(self.element_data.loc[elem, &#34;s&#34;]/self.element_data.loc[elem, &#34;n&#34;])*self.formula_dict[elem] for elem in list(self.formula_dict.keys())]
+        if unit == &#34;J/mol/K&#34;:
+            unit_conv = 4.184
+        elif unit == &#34;cal/mol/K&#34;:
+            unit_conv = 1
+        else:
+            print(&#34;Warning in entropy: specified unit&#34;, unit,
+                  &#34;is not recognized. Returning entropy in J/mol/K&#34;)
+            unit_conv = 4.184
+            
+        return sum(entropies)*unit_conv
+
+    
+    def __dict_to_formula(self, formula_dict):
+        
+        &#34;&#34;&#34;
+        Convert a formula dictionary into a formula string.
+        Example:
+        ```dict_to_formula(parse_formula(&#34;CO3-2&#34;))```
+        &#34;&#34;&#34;
+        
+        formula_string = &#34;&#34;
+        for key in formula_dict.keys():
+            if abs(formula_dict[key]) == 1:
+                v = &#34;&#34;
+            else:
+                v = formula_dict[key]
+                if (v).is_integer():
+                    v = int(v)
+
+            formula_string = formula_string + str(key) + str(v)
+        return formula_string
+
+    
+    def __match_groups(self, show=False, save=False):
+        patterns = self.pattern_dict.keys()
+        mol = Chem.MolFromSmiles(self.smiles)
+
+        match_dict = dict(zip(patterns, [0]*len(patterns))) # initialize match_dict
+        for pattern in patterns:
+            if pattern != &#34;Yo&#34;: # never match material point
+                try:
+                    match_dict[pattern] = len(mol.GetSubstructMatches(Chem.MolFromSmarts(pattern)))
+                except:
+                    print(&#34;Warning in match_groups(): problem&#34;,
+                          &#34;identifying SMARTS group&#34;, pattern,
+                          &#34;. Skipping this group.&#34;)
+
+        ### check that total formula of groups matches that of the molecule
+        
+        # create a dictionary of element matches
+        total_formula_dict = {}
+        for match in match_dict.keys():
+            this_match = parse_formula(self.pattern_dict[match])
+            for element in this_match.keys():
+                this_match[element] *= match_dict[match]
+                if element in total_formula_dict:
+                    total_formula_dict[element] += this_match[element]
+                else:
+                    total_formula_dict[str(element)] = 0
+                    total_formula_dict[element] += this_match[element]
+        
+        # remove keys of elements with a value of 0 (e.g. &#34;H&#34;:0.0)
+        for key in list(total_formula_dict.keys()):
+            if total_formula_dict[key] == 0.0:
+                total_formula_dict.pop(key, None)
+        
+        # retrieve individual charges that contribute to net charge
+        atomic_info = self.pcp_compound[0].record[&#34;atoms&#34;]
+        chargedict = {}
+        if &#34;charge&#34; in atomic_info.keys():
+            all_charges = [chargedict.get(&#34;value&#34;, 0) for chargedict in atomic_info[&#34;charge&#34;]]
+            pos_charge = sum([charge for charge in all_charges if charge &gt; 0])
+            neg_charge = abs(sum([charge for charge in all_charges if charge &lt; 0]))
+            if pos_charge &gt; 0:
+                chargedict[&#39;+&#39;]=float(pos_charge)
+            if neg_charge &gt; 0:
+                chargedict[&#39;-&#39;]=float(neg_charge)
+        else:
+            chargedict = {}
+
+        # perform the comparison
+        test_dict = parse_formula(self.pcp_compound[0].molecular_formula)
+        test_dict.update(chargedict)
+        if total_formula_dict != test_dict:
+            mssg = &#34;The formula of &#34; + self.name + \
+                &#34; does not equal the the elemental composition of the &#34; + \
+                &#34;matched groups. This could be because the database &#34; + \
+                &#34;is missing representative groups.\nFormula of &#34; + \
+                self.name + &#34;:\n&#34;
+            pcp_dict = parse_formula(self.pcp_compound[0].molecular_formula)
+            pcp_dict.update(chargedict)
+            mssg = mssg + str(pcp_dict) + &#34;\nTotal formula of group matches:\n&#34; + \
+                str(total_formula_dict)
+            raise Exception(mssg)
+        
+        # add molecular formula to match dictionary
+        match_dict[&#34;formula&#34;] = self.__dict_to_formula(total_formula_dict)
+        
+        return match_dict
+
+    
+    def __display_molecule(self, show=True, save=False):
+        mol_smiles = Chem.MolFromSmiles(self.smiles)
+        
+        mc = Chem.Mol(mol_smiles.ToBinary())
+        molSize=(450, 150)
+        
+        if not mc.GetNumConformers():
+            #Compute 2D coordinates
+            rdDepictor.Compute2DCoords(mc)
+        # init the drawer with the size
+        drawer = rdMolDraw2D.MolDraw2DSVG(molSize[0],molSize[1])
+        #draw the molcule
+        drawer.DrawMolecule(mc)
+        drawer.FinishDrawing()
+        # get the SVG string
+        svg = drawer.GetDrawingText()
+
+        if show:
+            # fix the svg string and display it
+            display(SVG(svg.replace(&#39;svg:&#39;,&#39;&#39;)))
+
+        if save:
+            os.makedirs(&#34;mol_svg&#34;, exist_ok=True)
+            os.makedirs(&#34;mol_png&#34;, exist_ok=True)
+            #Draw.MolToFile( mol, &#34;mol_svg/&#34;+self.name+&#34;.svg&#34; )
+            Draw.MolToFile(mol_smiles, &#34;mol_png/&#34;+self.name+&#34;.png&#34;)
+    
+    def __BensonHSCp(self, print_groups=False):
+        this_smile = self.pcp_compound[0].canonical_smiles
+        lib = GroupLibrary.Load(&#39;BensonGA&#39;)
+        descriptors = lib.GetDescriptors(this_smile)
+        if print_groups:
+            print(descriptors)
+        thermochem = lib.Estimate(descriptors,&#39;thermochem&#39;)
+        H = thermochem.get_H(298.15, units=&#34;kJ/mol&#34;)
+        S = thermochem.get_S(298.15, units=&#34;J/mol/K&#34;)
+        Cp = thermochem.get_Cp(298.15, units=&#34;J/mol/K&#34;)
+        return H, S, Cp
+
+    
+    def __test_group_match(self):
+        match_dict = self.__match_groups()
+        return {key:value for key,value in zip(match_dict.keys(), match_dict.values()) if value !=0}
+
+            
+    def __est_calcs(self):
+
+        props = [&#34;Gh&#34;, &#34;Hh&#34;, &#34;Sh&#34;, &#34;Cph&#34;, &#34;V&#34;]
+
+        for prop in props:
+            if self.__getattribute__(prop) == None:
+                err_str = prop + &#34;_err&#34;
+
+                # derive Sh, entropy of hydration, in J/mol K
+                if prop == &#34;Sh&#34;:
+                    # Entropy calculated from S = (G-H)/(-Tref)
+                    mol_prop = (float(self.Gh) - float(self.Hh))/(-298.15)
+                    mol_prop = mol_prop*1000 # convert kJ/molK to J/molK
+
+                    # propagate error from Gh and Hh to estimate Sh error.
+                    # equation used: Sh_err = Sh*sqrt((Gh_err/Gh)^2 + (Hh_err/Hh)^2)
+                    Gh_err_float = float(self.Gh_err)/float(self.Gh)
+                    Hh_err_float = float(self.Hh_err)/float(self.Hh)
+                    mol_err = abs(mol_prop)*math.sqrt(Gh_err_float**2 + Hh_err_float**2)
+
+                    # check whether Gh or Hh as the fewest sigfigs
+                    sf = min([find_sigfigs(self.Gh), find_sigfigs(self.Hh)])
+
+                    # round Sh to this number of sigfigs
+                    mol_prop = sigfig.round(str(mol_prop), sigfigs=sf)
+
+                    # check how many decimal places Sh has after sigfig rounding
+                    if &#34;.&#34; in mol_prop:
+                        this_split = mol_prop.split(&#34;.&#34;)
+                        n_dec = len(this_split[len(this_split)-1])
+                    else:
+                        n_dec = 0
+
+                    # assign Sh and Sh_err
+                    #self.__setattr__(prop, mol_prop) # for trailing zeros, but must store Sh as str.
+                    #self.__setattr__(err_str, format(mol_err, &#39;.&#39;+str(n_dec)+&#39;f&#39;)) # for trailing zeros, but must store Sh_err as str.
+                    self.__setattr__(prop, float(mol_prop))
+                    self.__setattr__(err_str, round(float(mol_err), n_dec))
+
+
+                    continue
+
+                # For all properties except for Sh:
+                # initialize variables and lists
+                mol_prop = 0
+                mol_err = 999
+                prop_errs = []
+                n_dec = 999
+                error_groups = []
+
+                for group in self.groups:
+
+                    try:
+                        contains_group = self.group_matches.loc[self.name, group][0] != 0
+                    except:
+                        contains_group = self.group_matches.loc[self.name, group] != 0
+
+                    # if this molecule contains this group...
+                    if contains_group:
+
+                        try:
+                            # add number of groups multiplied by its contribution
+                            mol_prop += self.group_matches.loc[self.name, group] * float(self.group_data.loc[group, prop])
+
+                            # round property to smallest number of decimal places
+                            if &#34;.&#34; in self.group_data.loc[group, prop]:
+                                this_split = self.group_data.loc[group, prop].split(&#34;.&#34;)
+                                n_dec_group = len(this_split[len(this_split)-1])
+                            else:
+                                n_dec_group = 0
+
+                            if n_dec_group &lt; n_dec:
+                                n_dec = n_dec_group
+
+                            # handle group std errors
+                            try:
+                                float(self.group_data.loc[group, err_str]) # assert that this group&#39;s error is numeric
+                                prop_errs.append(self.group_data.loc[group, err_str]) # append error
+                            except:
+                                # if group&#39;s error is non-numeric, pass
+                                pass
+
+                        except:
+                            error_groups.append(group)
+
+                if len(error_groups) == 0:
+
+                    # add Y0
+                    mol_prop += float(self.group_data.loc[&#34;Yo&#34;, prop])
+
+                    # propagate error of summed groups: sqrt(a**2 + b**2 + ...)
+                    mol_err = round(math.sqrt(sum([float(err)**2 for err in prop_errs])), n_dec)
+
+#                     # format output as string (preserves trailing zeros)
+#                     mol_prop = format(mol_prop, &#39;.&#39;+str(n_dec)+&#39;f&#39;)
+#                     mol_err = format(mol_err, &#39;.&#39;+str(n_dec)+&#39;f&#39;)
+
+                    self.__setattr__(prop, mol_prop)
+                    self.__setattr__(err_str, mol_err)
+
+                else:
+                    message1 = self.name + &#34; encountered errors with group(s): &#34; + str(error_groups) + &#34;.&#34;
+                    message2 = &#34;Are these groups assigned properties in the data file? ;&#34;
+                    self.note = self.note + message1 + &#34; &#34; + message2
+                    print(message1)
+                    print(message2)
+        
+        ig_gas_error = False
+        if self.Gig != None and self.Hig != None and self.Sig != None and self.Cpig != None:
+            # no ideal gas estimation needed.
+            # TODO: Modify if statement to allow calculating remainder if
+            # two out of three are provided for: Gig, Hig, Sig
+            pass
+        elif self.ig_method == &#34;Joback&#34;:
+            # Joback estimation of the Gibbs free energy of formation of the
+            # ideal gas (Joule-based).
+            try:
+
+                J = thermo.Joback(Chem.MolFromSmiles(self.smiles))
+                J_estimate = J.estimate()
+                if self.Gig == None:
+                    self.Gig = J_estimate[&#39;Gf&#39;]/1000
+                if self.Hig == None:
+                    self.Hig = J_estimate[&#39;Hf&#39;]/1000
+                if self.Sig == None:
+                    self.Sig = ((float(self.Gig) - float(self.Hig))/-298.15)*1000 + self.Selements
+                if self.Cpig == None:
+                    self.Cpig = J_estimate[&#39;Cpig&#39;](T=298.15)
+            except:
+                ig_gas_error = True
+
+        elif self.ig_method == &#34;Benson&#34;:
+            # Benson estimation of the Gibbs free energy of formation of
+            # the ideal gas (Joule-based).
+            try:
+                Hig_ben, Sig_ben, Cpig_ben = self.__BensonHSCp()
+                if self.Hig == None:
+                    self.Hig = Hig_ben
+                if self.Sig == None:
+                    self.Sig = Sig_ben
+                if self.Cpig == None:
+                    self.Cpig == Cpig_ben
+                delta_Sig = self.Sig - self.Selements
+                if self.Gig == None:
+                    self.Gig = self.Hig - 298.15*delta_Sig/1000
+            except:
+                ig_gas_error = True
+        else:
+            print(&#34;Error! The ideal gas property estimation method&#34;, self.ig_method, &#34;is not recognized. Try &#39;Joback&#39; or &#39;Benson&#39;.&#34;)
+
+        if ig_gas_error:
+            msg = &#34;The properties of aqueous &#34;+self.name+&#34; could not be &#34; + \
+                &#34;estimated because its ideal gas properties could not be &#34; + \
+                &#34;estimated with the &#34;+self.ig_method+&#34; method.&#34;
+            raise Exception(msg)
+                
+        # estimate the Gibbs free energy of formation of the aqueous molecule by summing
+        # its ideal gas and hydration properties.
+        # TODO: if ideal gas properties are NaN, ensure aqueous properties are too.
+        # TODO: determine estimation error of ideal gas, then propagate with hydration errors.
+        # TODO: propagate errors into HKF parameter estimations.
+        
+        try:
+            if self.Gaq == None:
+                self.Gaq = float(self.Gig) + float(self.Gh)
+        except:
+            self.Gaq = float(&#34;NaN&#34;)
+
+        try:
+            if self.Haq == None:
+                self.Haq = float(self.Hig) + float(self.Hh)
+        except:
+            self.Haq = float(&#34;NaN&#34;)
+
+        try:
+            if self.Saq == None:
+                self.Saq = ((float(self.Gaq) - float(self.Haq))/-298.15)*1000 + self.Selements
+        except:
+            self.Saq = float(&#34;NaN&#34;)
+        try:
+            if self.Cpaq == None:
+                self.Cpaq = self.Cpig + float(self.Cph)
+        except:
+            self.Cpaq = float(&#34;NaN&#34;) 
+
+        # calculate HKF parameters
+        try:
+            hkf_dict = find_HKF(Gh=float(self.Gh),
+                                V=float(self.V),
+                                Cp=float(self.Cpaq),
+                                Gf=float(self.Gaq),
+                                Hf=float(self.Haq),
+                                Saq=float(self.Saq),
+                                charge=float(self.charge),
+                                J_to_cal=False)
+            for param in hkf_dict.keys():
+                self.__setattr__(param, hkf_dict[param])
+
+        except:
+            print(&#34;Could not calculate HKF parameters for&#34;, self.name)
+            pass
+
+    # convert dataframe into an OBIGT table with an option to write to a csv file.
+    def __convert_to_OBIGT(self):
+        
+        df = pd.DataFrame({&#39;name&#39;:self.name,
+                           &#39;abbrv&#39;:self.formula,
+                           &#39;formula&#39;:self.formula,
+                           &#39;state&#39;:&#39;aq&#39;,
+                           &#39;ref1&#39;:&#39;AqOrg&#39;,
+                           &#39;ref2&#39;:&#39;GrpAdd&#39;,
+                           &#39;date&#39;:datetime.now().strftime(&#34;%d/%m/%Y %H:%M:%S&#34;),
+                           &#39;E_units&#39;:&#39;J&#39;,
+                           &#39;G&#39;:float(self.Gaq)*1000,
+                           &#39;H&#39;:float(self.Haq)*1000,
+                           &#39;S&#39;:float(self.Saq),
+                           &#39;Cp&#39;:float(self.Cpaq),
+                           &#39;V&#39;:float(self.V),
+                           &#39;a1.a&#39;:float(self.a1),
+                           &#39;a2.b&#39;:float(self.a2),
+                           &#39;a3.c&#39;:float(self.a3),
+                           &#39;a4.d&#39;:float(self.a4),
+                           &#39;c1.e&#39;:float(self.c1),
+                           &#39;c2.f&#39;:float(self.c2),
+                           &#39;omega.lambda&#39;:float(self.omega),
+                           &#39;z.T&#39;:self.charge}, index=[0])
+
+        return df.set_index(&#39;name&#39;)
+
+
+    def __estimate(self):
+        self.__set_groups()
+        self.__est_calcs()
+        return self.__convert_to_OBIGT()</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="AqOrg" href="index.html">AqOrg</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="AqOrg.AqOrg.find_HKF" href="#AqOrg.AqOrg.find_HKF">find_HKF</a></code></li>
+<li><code><a title="AqOrg.AqOrg.find_HKF_test" href="#AqOrg.AqOrg.find_HKF_test">find_HKF_test</a></code></li>
+<li><code><a title="AqOrg.AqOrg.find_sigfigs" href="#AqOrg.AqOrg.find_sigfigs">find_sigfigs</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="AqOrg.AqOrg.Estimate" href="#AqOrg.AqOrg.Estimate">Estimate</a></code></h4>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.2</a>.</p>
+</footer>
+</body>
+</html>
