@@ -862,7 +862,7 @@ class Estimate():
                            'omega.lambda':float(self.omega),
                            'z.T':self.charge}, index=[0])
 
-        return df.set_index('name')
+        return df
 
 
     def __estimate(self):
