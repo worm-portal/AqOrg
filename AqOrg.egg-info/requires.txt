@@ -1,5 +1,4 @@
 chemparse
-thermo
 pubchempy
 sigfig
 pandas

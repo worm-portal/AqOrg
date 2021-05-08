@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: AqOrg
-Version: 0.1.7
+Version: 0.1.8
 Summary: Estimate thermodynamic properties of aqueous organic compounds
 Home-page: UNKNOWN
 Author: Grayson Boyer
@@ -9,10 +9,7 @@ License: UNKNOWN
 Description: # AqOrg
         
         Estimate the thermodynamic properties and HKF parameters of aqueous organic molecules using second order group additivity methods.
-        
-        ## Features
-        
-        Placeholder
+        This [Jupyter notebook demo](https://gitlab.com/worm1/worm-library/-/blob/master/4-Thermodynamic-Property-Estimation/Introduction-Aq-Organic-Estimator.ipynb) introduces the underlying concepts.
         
         ## Requirements
         
@@ -28,7 +25,7 @@ Description: # AqOrg
         
         ## Usage
         
-        Placeholder
+        See this [Jupyter notebook demo](https://gitlab.com/worm1/worm-library/-/blob/master/4-Thermodynamic-Property-Estimation/Aq-Organics-Feature-Demo/Aqueous-Organic-Molecules.ipynb) for examples.
 Platform: UNKNOWN
 Classifier: Programming Language :: Python :: 3
 Classifier: License :: OSI Approved :: MIT License

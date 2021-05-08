@@ -35,7 +35,6 @@ import math
 import sigfig
 import pubchempy as pcp
 import os
-import thermo
 from chemparse import parse_formula
 import pkg_resources
 from datetime import datetime
@@ -43,7 +42,6 @@ from datetime import datetime
 # for benson group additivity
 from pgradd.GroupAdd.Library import GroupLibrary
 import pgradd.ThermoChem
-
 
 def find_HKF(Gh=float(&#39;NaN&#39;), V=float(&#39;NaN&#39;), Cp=float(&#39;NaN&#39;),
              Gf=float(&#39;NaN&#39;), Hf=float(&#39;NaN&#39;), Saq=float(&#39;NaN&#39;),
@@ -420,8 +418,8 @@ class Estimate():
     
     &#34;&#34;&#34;
     
-    def __init__(self, name, ig_method = &#34;Joback&#34;, show=True, group_data=None,
-                       test=False, **kwargs):
+    def __init__(self, name, ig_method=&#34;Joback&#34;, show=True, group_data=None,
+                       test=False, state=&#39;aq&#39;, **kwargs):
                        # E_units=&#34;J&#34; # not implemented... tricky because groups
                                      # are in both kJ and J units.
 
@@ -442,6 +440,10 @@ class Estimate():
         self.Gig = None
         self.Hig = None
         self.Sig = None
+        self.Cpig_a = None
+        self.Cpig_b = None
+        self.Cpig_c = None
+        self.Cpig_d = None
         self.Cpig = None
         self.Gaq = None
         self.Haq = None
@@ -454,10 +456,10 @@ class Estimate():
         # load group contribution data
         if group_data == None:
             group_data = pkg_resources.resource_stream(__name__, &#34;data/group_contribution_data.csv&#34;)
-        elif &#39;.csv&#39; in group_data:
-            pass
-        else:
-            raise Exception(&#34;group_data must be a CSV file.&#34;)
+#         elif &#39;.csv&#39; in group_data:
+#             pass
+#         else:
+#             raise Exception(&#34;group_data must be a CSV file.&#34;)
         self.__load_group_data(group_data)
         
         # look up compound on PubChem
@@ -476,7 +478,7 @@ class Estimate():
             self.__display_molecule()
 
         if test:
-            print(self.__test_group_match())
+            print(self.__test_group_match())            
         else:
             # load properties of the elements
             # Cox, J. D., Wagman, D. D., and Medvedev, V. A., CODATA Key Values
@@ -489,7 +491,10 @@ class Estimate():
             self.note = &#34;&#34;
             self.charge = 0 # !
             
-            self.OBIGT = self.__estimate()
+            if state == &#39;aq&#39;:
+                self.OBIGT = self.__estimate()
+            elif state == &#39;gas&#39;:
+                self.__estimate_joback()
 
     def __load_group_data(self, db_filename):
         self.group_data = pd.read_csv(db_filename, dtype=str)
@@ -662,11 +667,54 @@ class Estimate():
         match_dict = self.__match_groups()
         return {key:value for key,value in zip(match_dict.keys(), match_dict.values()) if value !=0}
 
+    
+    def __est_joback(self):
+        
+        # values to be added to final estimate of each property
+        joback_props = {&#34;Gig&#34;:53.88, &#34;Hig&#34;:68.29, # kJ/mol
+                        &#34;Cpig_a&#34;:-37.93, &#34;Cpig_b&#34;:0.210, # j/mol/K
+                        &#34;Cpig_c&#34;:-3.91*10**-4, &#34;Cpig_d&#34;:2.06*10**-7} # j/mol/K
+        
+        for prop in joback_props.keys():
+            mol_prop = 0
+            error_groups = []
+
+            for group in self.groups:
+
+                try:
+                    contains_group = self.group_matches.loc[self.name, group][0] != 0
+                except:
+                    contains_group = self.group_matches.loc[self.name, group] != 0
+
+                # if this molecule contains this group...
+                if contains_group:
+                    try:
+                        # add number of groups multiplied by its contribution
+                        mol_prop += self.group_matches.loc[self.name, group] * float(self.group_data.loc[group, prop])
+                    except:
+                        error_groups.append(group)
+                        
+                if len(error_groups) == 0:
+                    self.__setattr__(prop, mol_prop+joback_props[prop])
+                else:
+                    msg = self.name + &#34; encountered errors with group(s): &#34; +\
+                        str(error_groups) + &#34;. Are these groups assigned &#34;+\
+                        &#34;ideal gas properties in the Joback data file?&#34;
+                    raise Exception(msg)
             
+        # calculate Cpig
+        T=298.15
+        self.Cpig = self.Cpig_a + self.Cpig_b*T + self.Cpig_c*T**2 +\
+                    self.Cpig_d*T**3
+        
+        # calculate Sig
+        self.Sig = ((self.Gig - self.Hig)/-298.15)*1000 + self.Selements
+    
+    
     def __est_calcs(self):
 
         props = [&#34;Gh&#34;, &#34;Hh&#34;, &#34;Sh&#34;, &#34;Cph&#34;, &#34;V&#34;]
-
+        
         for prop in props:
             if self.__getattribute__(prop) == None:
                 err_str = prop + &#34;_err&#34;
@@ -764,11 +812,10 @@ class Estimate():
                     self.__setattr__(err_str, mol_err)
 
                 else:
-                    message1 = self.name + &#34; encountered errors with group(s): &#34; + str(error_groups) + &#34;.&#34;
-                    message2 = &#34;Are these groups assigned properties in the data file? ;&#34;
-                    self.note = self.note + message1 + &#34; &#34; + message2
-                    print(message1)
-                    print(message2)
+                    msg = self.name + &#34; encountered errors with group(s): &#34; +\
+                        str(error_groups) + &#34;. Are these groups assigned &#34;+\
+                        &#34;hydration properties in the data file?&#34;
+                    raise Exception(msg)
         
         ig_gas_error = False
         if self.Gig != None and self.Hig != None and self.Sig != None and self.Cpig != None:
@@ -780,17 +827,16 @@ class Estimate():
             # Joback estimation of the Gibbs free energy of formation of the
             # ideal gas (Joule-based).
             try:
-
-                J = thermo.Joback(Chem.MolFromSmiles(self.smiles))
-                J_estimate = J.estimate()
+                J_estimate = Joback(self.name)
+                
                 if self.Gig == None:
-                    self.Gig = J_estimate[&#39;Gf&#39;]/1000
+                    self.Gig = J_estimate[&#34;Gig&#34;]
                 if self.Hig == None:
-                    self.Hig = J_estimate[&#39;Hf&#39;]/1000
+                    self.Hig = J_estimate[&#34;Hig&#34;]
                 if self.Sig == None:
                     self.Sig = ((float(self.Gig) - float(self.Hig))/-298.15)*1000 + self.Selements
                 if self.Cpig == None:
-                    self.Cpig = J_estimate[&#39;Cpig&#39;](T=298.15)
+                    self.Cpig = J_estimate[&#34;Cpig&#34;]
             except:
                 ig_gas_error = True
 
@@ -890,13 +936,46 @@ class Estimate():
                            &#39;omega.lambda&#39;:float(self.omega),
                            &#39;z.T&#39;:self.charge}, index=[0])
 
-        return df.set_index(&#39;name&#39;)
-
+        return df
 
     def __estimate(self):
         self.__set_groups()
         self.__est_calcs()
-        return self.__convert_to_OBIGT()</code></pre>
+        return self.__convert_to_OBIGT()
+
+    def __estimate_joback(self):
+        self.__set_groups()
+        self.__est_joback()
+
+def Joback(name):
+    
+    &#34;&#34;&#34;
+    Estimate standard state ideal gas properties of a molecule using the Joback
+    method. (Joback K. G., Reid R. C., &#34;Estimation of Pure-Component Properties
+    from Group-Contributions&#34;, Chem. Eng. Commun., 57, 233–243, 1987.)
+    
+    Parameters
+    ----------
+    name : str
+        Name of the molecule for which to estimate ideal gas properties.
+        
+    Returns
+    ----------
+    dict
+        A dictionary containing standard state ideal gas properties estimated
+        with the Joback method:
+        
+        - Gig : Ideal gas Gibbs free energy of formation, kJ/mol.
+        - Hig : Ideal gas enthalpy of formation, kJ/mol.
+        - Sig : Ideal gas entropy, J/mol/K.
+        - Cpig : Ideal gas isobaric heat capacity, J/mol/K.
+    &#34;&#34;&#34;
+    
+    ig_est = Estimate(name, state=&#39;gas&#39;, show=False,
+                      group_data=pkg_resources.resource_stream(__name__, &#39;data/joback_groups.csv&#39;), index_col=&#34;groups&#34;)
+    
+    return {&#39;Gig&#39;:ig_est.Gig, &#39;Hig&#39;:ig_est.Hig,
+            &#39;Sig&#39;:ig_est.Sig, &#39;Cpig&#39;:ig_est.Cpig}</code></pre>
 </details>
 </section>
 <section>
@@ -906,6 +985,67 @@ class Estimate():
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
+<dt id="AqOrg.AqOrg.Joback"><code class="name flex">
+<span>def <span class="ident">Joback</span></span>(<span>name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Estimate standard state ideal gas properties of a molecule using the Joback
+method. (Joback K. G., Reid R. C., "Estimation of Pure-Component Properties
+from Group-Contributions", Chem. Eng. Commun., 57, 233–243, 1987.)</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>name</code></strong> :&ensp;<code>str</code></dt>
+<dd>Name of the molecule for which to estimate ideal gas properties.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>dict</code></dt>
+<dd>
+<p>A dictionary containing standard state ideal gas properties estimated
+with the Joback method:</p>
+<ul>
+<li>Gig : Ideal gas Gibbs free energy of formation, kJ/mol.</li>
+<li>Hig : Ideal gas enthalpy of formation, kJ/mol.</li>
+<li>Sig : Ideal gas entropy, J/mol/K.</li>
+<li>Cpig : Ideal gas isobaric heat capacity, J/mol/K.</li>
+</ul>
+</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def Joback(name):
+    
+    &#34;&#34;&#34;
+    Estimate standard state ideal gas properties of a molecule using the Joback
+    method. (Joback K. G., Reid R. C., &#34;Estimation of Pure-Component Properties
+    from Group-Contributions&#34;, Chem. Eng. Commun., 57, 233–243, 1987.)
+    
+    Parameters
+    ----------
+    name : str
+        Name of the molecule for which to estimate ideal gas properties.
+        
+    Returns
+    ----------
+    dict
+        A dictionary containing standard state ideal gas properties estimated
+        with the Joback method:
+        
+        - Gig : Ideal gas Gibbs free energy of formation, kJ/mol.
+        - Hig : Ideal gas enthalpy of formation, kJ/mol.
+        - Sig : Ideal gas entropy, J/mol/K.
+        - Cpig : Ideal gas isobaric heat capacity, J/mol/K.
+    &#34;&#34;&#34;
+    
+    ig_est = Estimate(name, state=&#39;gas&#39;, show=False,
+                      group_data=pkg_resources.resource_stream(__name__, &#39;data/joback_groups.csv&#39;), index_col=&#34;groups&#34;)
+    
+    return {&#39;Gig&#39;:ig_est.Gig, &#39;Hig&#39;:ig_est.Hig,
+            &#39;Sig&#39;:ig_est.Sig, &#39;Cpig&#39;:ig_est.Cpig}</code></pre>
+</details>
+</dd>
 <dt id="AqOrg.AqOrg.find_HKF"><code class="name flex">
 <span>def <span class="ident">find_HKF</span></span>(<span>Gh=nan, V=nan, Cp=nan, Gf=nan, Hf=nan, Saq=nan, charge=nan, J_to_cal=True)</span>
 </code></dt>
@@ -1286,7 +1426,7 @@ eight digits long.</p>
 <dl>
 <dt id="AqOrg.AqOrg.Estimate"><code class="flex name class">
 <span>class <span class="ident">Estimate</span></span>
-<span>(</span><span>name, ig_method='Joback', show=True, group_data=None, test=False, **kwargs)</span>
+<span>(</span><span>name, ig_method='Joback', show=True, group_data=None, test=False, state='aq', **kwargs)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Estimate thermodynamic properties of an aqueous organic molecule.</p>
@@ -1443,8 +1583,8 @@ package (see <a href="https://chnosz.net/manual/thermo.html">https://chnosz.net/
     
     &#34;&#34;&#34;
     
-    def __init__(self, name, ig_method = &#34;Joback&#34;, show=True, group_data=None,
-                       test=False, **kwargs):
+    def __init__(self, name, ig_method=&#34;Joback&#34;, show=True, group_data=None,
+                       test=False, state=&#39;aq&#39;, **kwargs):
                        # E_units=&#34;J&#34; # not implemented... tricky because groups
                                      # are in both kJ and J units.
 
@@ -1465,6 +1605,10 @@ package (see <a href="https://chnosz.net/manual/thermo.html">https://chnosz.net/
         self.Gig = None
         self.Hig = None
         self.Sig = None
+        self.Cpig_a = None
+        self.Cpig_b = None
+        self.Cpig_c = None
+        self.Cpig_d = None
         self.Cpig = None
         self.Gaq = None
         self.Haq = None
@@ -1477,10 +1621,10 @@ package (see <a href="https://chnosz.net/manual/thermo.html">https://chnosz.net/
         # load group contribution data
         if group_data == None:
             group_data = pkg_resources.resource_stream(__name__, &#34;data/group_contribution_data.csv&#34;)
-        elif &#39;.csv&#39; in group_data:
-            pass
-        else:
-            raise Exception(&#34;group_data must be a CSV file.&#34;)
+#         elif &#39;.csv&#39; in group_data:
+#             pass
+#         else:
+#             raise Exception(&#34;group_data must be a CSV file.&#34;)
         self.__load_group_data(group_data)
         
         # look up compound on PubChem
@@ -1499,7 +1643,7 @@ package (see <a href="https://chnosz.net/manual/thermo.html">https://chnosz.net/
             self.__display_molecule()
 
         if test:
-            print(self.__test_group_match())
+            print(self.__test_group_match())            
         else:
             # load properties of the elements
             # Cox, J. D., Wagman, D. D., and Medvedev, V. A., CODATA Key Values
@@ -1512,7 +1656,10 @@ package (see <a href="https://chnosz.net/manual/thermo.html">https://chnosz.net/
             self.note = &#34;&#34;
             self.charge = 0 # !
             
-            self.OBIGT = self.__estimate()
+            if state == &#39;aq&#39;:
+                self.OBIGT = self.__estimate()
+            elif state == &#39;gas&#39;:
+                self.__estimate_joback()
 
     def __load_group_data(self, db_filename):
         self.group_data = pd.read_csv(db_filename, dtype=str)
@@ -1685,11 +1832,54 @@ package (see <a href="https://chnosz.net/manual/thermo.html">https://chnosz.net/
         match_dict = self.__match_groups()
         return {key:value for key,value in zip(match_dict.keys(), match_dict.values()) if value !=0}
 
+    
+    def __est_joback(self):
+        
+        # values to be added to final estimate of each property
+        joback_props = {&#34;Gig&#34;:53.88, &#34;Hig&#34;:68.29, # kJ/mol
+                        &#34;Cpig_a&#34;:-37.93, &#34;Cpig_b&#34;:0.210, # j/mol/K
+                        &#34;Cpig_c&#34;:-3.91*10**-4, &#34;Cpig_d&#34;:2.06*10**-7} # j/mol/K
+        
+        for prop in joback_props.keys():
+            mol_prop = 0
+            error_groups = []
+
+            for group in self.groups:
+
+                try:
+                    contains_group = self.group_matches.loc[self.name, group][0] != 0
+                except:
+                    contains_group = self.group_matches.loc[self.name, group] != 0
+
+                # if this molecule contains this group...
+                if contains_group:
+                    try:
+                        # add number of groups multiplied by its contribution
+                        mol_prop += self.group_matches.loc[self.name, group] * float(self.group_data.loc[group, prop])
+                    except:
+                        error_groups.append(group)
+                        
+                if len(error_groups) == 0:
+                    self.__setattr__(prop, mol_prop+joback_props[prop])
+                else:
+                    msg = self.name + &#34; encountered errors with group(s): &#34; +\
+                        str(error_groups) + &#34;. Are these groups assigned &#34;+\
+                        &#34;ideal gas properties in the Joback data file?&#34;
+                    raise Exception(msg)
             
+        # calculate Cpig
+        T=298.15
+        self.Cpig = self.Cpig_a + self.Cpig_b*T + self.Cpig_c*T**2 +\
+                    self.Cpig_d*T**3
+        
+        # calculate Sig
+        self.Sig = ((self.Gig - self.Hig)/-298.15)*1000 + self.Selements
+    
+    
     def __est_calcs(self):
 
         props = [&#34;Gh&#34;, &#34;Hh&#34;, &#34;Sh&#34;, &#34;Cph&#34;, &#34;V&#34;]
-
+        
         for prop in props:
             if self.__getattribute__(prop) == None:
                 err_str = prop + &#34;_err&#34;
@@ -1787,11 +1977,10 @@ package (see <a href="https://chnosz.net/manual/thermo.html">https://chnosz.net/
                     self.__setattr__(err_str, mol_err)
 
                 else:
-                    message1 = self.name + &#34; encountered errors with group(s): &#34; + str(error_groups) + &#34;.&#34;
-                    message2 = &#34;Are these groups assigned properties in the data file? ;&#34;
-                    self.note = self.note + message1 + &#34; &#34; + message2
-                    print(message1)
-                    print(message2)
+                    msg = self.name + &#34; encountered errors with group(s): &#34; +\
+                        str(error_groups) + &#34;. Are these groups assigned &#34;+\
+                        &#34;hydration properties in the data file?&#34;
+                    raise Exception(msg)
         
         ig_gas_error = False
         if self.Gig != None and self.Hig != None and self.Sig != None and self.Cpig != None:
@@ -1803,17 +1992,16 @@ package (see <a href="https://chnosz.net/manual/thermo.html">https://chnosz.net/
             # Joback estimation of the Gibbs free energy of formation of the
             # ideal gas (Joule-based).
             try:
-
-                J = thermo.Joback(Chem.MolFromSmiles(self.smiles))
-                J_estimate = J.estimate()
+                J_estimate = Joback(self.name)
+                
                 if self.Gig == None:
-                    self.Gig = J_estimate[&#39;Gf&#39;]/1000
+                    self.Gig = J_estimate[&#34;Gig&#34;]
                 if self.Hig == None:
-                    self.Hig = J_estimate[&#39;Hf&#39;]/1000
+                    self.Hig = J_estimate[&#34;Hig&#34;]
                 if self.Sig == None:
                     self.Sig = ((float(self.Gig) - float(self.Hig))/-298.15)*1000 + self.Selements
                 if self.Cpig == None:
-                    self.Cpig = J_estimate[&#39;Cpig&#39;](T=298.15)
+                    self.Cpig = J_estimate[&#34;Cpig&#34;]
             except:
                 ig_gas_error = True
 
@@ -1913,13 +2101,16 @@ package (see <a href="https://chnosz.net/manual/thermo.html">https://chnosz.net/
                            &#39;omega.lambda&#39;:float(self.omega),
                            &#39;z.T&#39;:self.charge}, index=[0])
 
-        return df.set_index(&#39;name&#39;)
-
+        return df
 
     def __estimate(self):
         self.__set_groups()
         self.__est_calcs()
-        return self.__convert_to_OBIGT()</code></pre>
+        return self.__convert_to_OBIGT()
+
+    def __estimate_joback(self):
+        self.__set_groups()
+        self.__est_joback()</code></pre>
 </details>
 </dd>
 </dl>
@@ -1938,6 +2129,7 @@ package (see <a href="https://chnosz.net/manual/thermo.html">https://chnosz.net/
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
+<li><code><a title="AqOrg.AqOrg.Joback" href="#AqOrg.AqOrg.Joback">Joback</a></code></li>
 <li><code><a title="AqOrg.AqOrg.find_HKF" href="#AqOrg.AqOrg.find_HKF">find_HKF</a></code></li>
 <li><code><a title="AqOrg.AqOrg.find_HKF_test" href="#AqOrg.AqOrg.find_HKF_test">find_HKF_test</a></code></li>
 <li><code><a title="AqOrg.AqOrg.find_sigfigs" href="#AqOrg.AqOrg.find_sigfigs">find_sigfigs</a></code></li>
