@@ -83,6 +83,8 @@ def find_HKF(Gh=float('NaN'), V=float('NaN'), Cp=float('NaN'),
 
 
     if not pd.isnull(Gh) and charge == 0:
+        if print_eq:
+            print("Gh is provided and charge equals zero so estimate omega from Plyasunov and Shock 2001...")
 
         # find omega*10**-5 (j/mol) if neutral and Gh available
         # Eq 8 in Plyasunov and Shock 2001
@@ -91,6 +93,8 @@ def find_HKF(Gh=float('NaN'), V=float('NaN'), Cp=float('NaN'),
             print("HKFomega = 2.61+(324.1/(Gh-90.6)), Eq 8 in Plyasunov and Shock 2001, omega*10**-5 (j/mol)\n")
 
     elif charge == 0:
+        if print_eq:
+            print("Gh is not provided and charge equals zero so estimate omega for neutral solutes from Shock and Helgeson 1990...")
 
         # find omega*10**-5 (j/mol) if neutral and Gh unavailable
         # Eq 61 in Shock and Helgeson 1990 for NONVOLATILE neutral organic species
@@ -99,7 +103,9 @@ def find_HKF(Gh=float('NaN'), V=float('NaN'), Cp=float('NaN'),
             print("HKFomega = (10**-5)*((-1514.4*(Saq/4.184)) + (0.34*10**5))*4.184, Eq 61 in Shock and Helgeson 1990, omega*10**-5 (j/mol)\n")
 
     elif charge != 0:
-
+        if print_eq:
+            print("Gh is not provided and charge does not equal zero so estimate omega for ionic species from Shock and Helgeson 1990...")
+            
         # define alphaZ (described in text after Eq 59 in Shock and Helgeson 1990)
         if (abs(charge) == 1):
             alphaZ = 72
@@ -168,6 +174,8 @@ def find_HKF(Gh=float('NaN'), V=float('NaN'), Cp=float('NaN'),
         print("cp_nonsolv = Cp - cp_solv, Eq 29 in Shock and Helgeson 1988, delta Cp nonsolvation (J/mol*K)\n")
         
     if not pd.isnull(Gh) and charge == 0:
+        if print_eq:
+            print("Gh is provided and charge is neutral, so estimate a1, a2, and a4 from Plysunov and Shock 2001")
         # find a1*10 (j/mol*bar)
         # Eq 10 in Plyasunov and Shock 2001
         HKFa1 = (0.820-((1.858*10**-3)*(Gh)))*V
@@ -186,48 +194,53 @@ def find_HKF(Gh=float('NaN'), V=float('NaN'), Cp=float('NaN'),
         HKFa4 = 8.10-(0.746*HKFa2)+(0.219*Gh)
         if print_eq:
             print("HKFa4 = 8.10-(0.746*HKFa2)+(0.219*Gh), Eq 12 in Plyasunov and Shock 2001, a4*10**-4 (j*K/mol)\n")
-            
-    elif charge != 0:
+
+    else:
+        if print_eq:
+            print("Gh is unavailable and/or charge is not 0, so estimate a2, a4 from Shock and Helgeson 1988, and a1 from Sverjensky et al 2014")
+        
         # find a1*10 (j/mol*bar)
         # Eq 16 in Sverjensky et al 2014, after Plyasunov and Shock 2001, converted to J/mol*bar. This equation is used in the DEW model since it works for charged and noncharged species up to 60kb
         HKFa1 = (0.1942*V_nonsolv + 1.52)*4.184
         if print_eq:
             print("HKFa1 = (0.1942*V_nonsolv + 1.52)*4.184, Eq 16 in Sverjensky et al 2014, after Plyasunov and Shock 2001, converted to J/mol*bar, a1*10 (j/mol*bar)\n")
             
+            
         # find a2*10**-2 (j/mol)
-        # Eq 8 in Shock and Helgeson, rearranged to solve for a2*10**-2. Sigma is divided by 41.84 due to the conversion of 41.84 cm3 = cal/bar
+        # Eq 8 in Shock and Helgeson 1988, rearranged to solve for a2*10**-2. Sigma is divided by 41.84 due to the conversion of 41.84 cm3 = cal/bar
         HKFa2 = (10**-2)*(((HKFsigma/41.84) -
                         ((HKFa1/10)/4.184))/(1/(2601)))*4.184
         if print_eq:
-            print("HKFa2 = (10**-2)*(((HKFsigma/41.84) - ((HKFa1/10)/4.184))/(1/(2601)))*4.184, Eq 8 in Shock and Helgeson, rearranged to solve for a2*10**-2 (j/mol). Sigma is divided by 41.84 due to the conversion of 41.84 cm3 = cal/bar\n")
+            print("HKFa2 = (10**-2)*(((HKFsigma/41.84) - ((HKFa1/10)/4.184))/(1/(2601)))*4.184, Eq 8 in Shock and Helgeson 1988, rearranged to solve for a2*10**-2 (j/mol). Sigma is divided by 41.84 due to the conversion of 41.84 cm3 = cal/bar\n")
             
         # find a4*10**-4 (j*K/mol)
-        # Eq 88 in Shock and Helgeson, solve for a4*10**-4
+        # Eq 88 in Shock and Helgeson 1988, solve for a4*10**-4
         HKFa4 = (10**-4)*(-4.134*(HKFa2/4.184)-27790)*4.184
         if print_eq:
-            print("HKFa4 = (10**-4)*(-4.134*(HKFa2/4.184)-27790)*4.184, Eq 88 in Shock and Helgeson, a4*10**-4 (j*K/mol)\n")
+            print("HKFa4 = (10**-4)*(-4.134*(HKFa2/4.184)-27790)*4.184, Eq 88 in Shock and Helgeson 1988, a4*10**-4 (j*K/mol)\n")
             
-    else:
-        HKFa1 = float('NaN')
-        HKFa2 = float('NaN')
-        HKFa3 = float('NaN')
-        if print_eq:
-            print("HKF parameters a1, a2, and a3 could not be estimated.\n")
+#     else:
+#         HKFa1 = float('NaN')
+#         HKFa2 = float('NaN')
+#         HKFa3 = float('NaN')
+#         HKFa4 = float('NaN')
+#         print("HKF parameters a1, a2, a3, and a4 could not be estimated.\n")
            
     # find c2*10**-4 (j*K/mol)
     if not pd.isnull(Gh) and charge == 0:
         HKFc2 = 21.4+(0.849*Gh)  # Eq 14 in Plyasunov and Shock 2001
         if print_eq:
             print("HKFc2 = 21.4+(0.849*Gh), Eq 14 in Plyasunov and Shock 2001, c2*10**-4 (j*K/mol)\n")
-    elif not pd.isnull(Cp) and charge != 0:
+#     elif not pd.isnull(Cp) and charge != 0:
+    else:
         # Eq 89 in Shock and Helgeson 1988
         HKFc2 = (0.2037*(Cp/4.184) - 3.0346)*4.184
         if print_eq:
             print("HKFc2 = (0.2037*(Cp/4.184) - 3.0346)*4.184, Eq 89 in Shock and Helgeson 1988, c2*10**-4 (j*K/mol)\n")
-    else:
-        HKFc2 = float('NaN')
-        if print_eq:
-            print("HKF parameter c2 could not be estimated.")
+#     else:
+#         HKFc2 = float('NaN')
+#         if print_eq:
+#             print("HKF parameter c2 could not be estimated.")
             
     # find c1 (j/mol*K)
     # Eq 31 in Shock and Helgeson 1988, rearranged to solve for c1
