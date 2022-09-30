@@ -738,6 +738,8 @@ class Estimate():
             pcp_dict.update(chargedict)
             mssg = mssg + str(pcp_dict) + "\nTotal formula of group matches:\n" + \
                 str(total_formula_dict)
+            mssg = mssg + "\nIncomplete group matches:\n" + \
+                str({k:v for k,v in zip(match_dict.keys(), match_dict.values()) if v!= 0})
             raise Exception(mssg)
         
         # add molecular formula to match dictionary

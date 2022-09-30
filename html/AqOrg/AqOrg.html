@@ -766,6 +766,8 @@ class Estimate():
             pcp_dict.update(chargedict)
             mssg = mssg + str(pcp_dict) + &#34;\nTotal formula of group matches:\n&#34; + \
                 str(total_formula_dict)
+            mssg = mssg + &#34;\nIncomplete group matches:\n&#34; + \
+                str({k:v for k,v in zip(match_dict.keys(), match_dict.values()) if v!= 0})
             raise Exception(mssg)
         
         # add molecular formula to match dictionary
@@ -2091,6 +2093,8 @@ package (see <a href="https://chnosz.net/manual/thermo.html">https://chnosz.net/
             pcp_dict.update(chargedict)
             mssg = mssg + str(pcp_dict) + &#34;\nTotal formula of group matches:\n&#34; + \
                 str(total_formula_dict)
+            mssg = mssg + &#34;\nIncomplete group matches:\n&#34; + \
+                str({k:v for k,v in zip(match_dict.keys(), match_dict.values()) if v!= 0})
             raise Exception(mssg)
         
         # add molecular formula to match dictionary
