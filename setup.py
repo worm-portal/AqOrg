@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="AqOrg",
-    version="0.1.13",
+    version="0.1.14",
     author="Grayson Boyer",
     author_email="gmboyer@asu.edu",
     description="Estimate thermodynamic properties of aqueous organic compounds",
@@ -22,7 +22,9 @@ setuptools.setup(
     install_requires=['chemparse',
                       'pubchempy',
                       'sigfig',
-                      'pandas'],
+                      'pandas',
+                      'rdkit',
+                      'pgradd'],
     include_package_data=True,
     package_data={'': ['data/*.csv']},
     zip_safe=False
