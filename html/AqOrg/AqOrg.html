@@ -39,10 +39,6 @@ from chemparse import parse_formula
 import pkg_resources
 from datetime import datetime
 
-# for benson group additivity
-from pgradd.GroupAdd.Library import GroupLibrary
-import pgradd.ThermoChem
-
 def find_HKF(Gh=float(&#39;NaN&#39;), V=float(&#39;NaN&#39;), Cp=float(&#39;NaN&#39;),
              Gf=float(&#39;NaN&#39;), Hf=float(&#39;NaN&#39;), Saq=float(&#39;NaN&#39;),
              charge=float(&#39;NaN&#39;), J_to_cal=True, print_eq=False):
@@ -499,7 +495,7 @@ class Estimate():
     
     ig_method : str, default &#34;Joback&#34;
         Group contribution method for estimating ideal gas properties. Accepts
-        &#34;Joback&#34; or &#34;Benson&#34;.
+        &#34;Joback&#34;. Previously supported &#34;Benson&#34;, but no longer.
                        
     show : bool, default True
         Show a diagram of the molecule?
@@ -509,6 +505,13 @@ class Estimate():
     
     test : bool, default False
         Perform a simple group matching test instead of estimating properties?
+
+    state : str, default &#34;aq&#34;
+        Can be &#34;aq&#34; or &#34;gas&#34;. Estimate the properties of an aqueous molecule or
+        an ideal gas?
+
+    save : bool, default False
+        Save molecular structure figures as PNG and SVG?
     
     **kwargs : numeric or str, optional
         Known standard state partial molal thermodynamic properties at 298.15 K
@@ -570,7 +573,7 @@ class Estimate():
     &#34;&#34;&#34;
     
     def __init__(self, name, ig_method=&#34;Joback&#34;, show=True, group_data=None,
-                       test=False, state=&#39;aq&#39;, **kwargs):
+                       test=False, state=&#39;aq&#39;, save=False, **kwargs):
                        # E_units=&#34;J&#34; # not implemented... tricky because groups
                                      # are in both kJ and J units.
 
@@ -626,7 +629,7 @@ class Estimate():
             raise Exception(mssg)
 
         if show:
-            self.__display_molecule()
+            self.__display_molecule(save=save)
 
         if test:
             print(self.__test_group_match())            
@@ -802,18 +805,6 @@ class Estimate():
             os.makedirs(&#34;mol_png&#34;, exist_ok=True)
             #Draw.MolToFile( mol, &#34;mol_svg/&#34;+self.name+&#34;.svg&#34; )
             Draw.MolToFile(mol_smiles, &#34;mol_png/&#34;+self.name+&#34;.png&#34;)
-    
-    def __BensonHSCp(self, print_groups=False):
-        this_smile = self.pcp_compound[0].canonical_smiles
-        lib = GroupLibrary.Load(&#39;BensonGA&#39;)
-        descriptors = lib.GetDescriptors(this_smile)
-        if print_groups:
-            print(descriptors)
-        thermochem = lib.Estimate(descriptors,&#39;thermochem&#39;)
-        H = thermochem.get_H(298.15, units=&#34;kJ/mol&#34;)
-        S = thermochem.get_S(298.15, units=&#34;J/mol/K&#34;)
-        Cp = thermochem.get_Cp(298.15, units=&#34;J/mol/K&#34;)
-        return H, S, Cp
 
     
     def __test_group_match(self):
@@ -993,24 +984,8 @@ class Estimate():
             except:
                 ig_gas_error = True
 
-        elif self.ig_method == &#34;Benson&#34;:
-            # Benson estimation of the Gibbs free energy of formation of
-            # the ideal gas (Joule-based).
-            try:
-                Hig_ben, Sig_ben, Cpig_ben = self.__BensonHSCp()
-                if self.Hig == None:
-                    self.Hig = Hig_ben
-                if self.Sig == None:
-                    self.Sig = Sig_ben
-                if self.Cpig == None:
-                    self.Cpig == Cpig_ben
-                delta_Sig = self.Sig - self.Selements
-                if self.Gig == None:
-                    self.Gig = self.Hig - 298.15*delta_Sig/1000
-            except:
-                ig_gas_error = True
         else:
-            print(&#34;Error! The ideal gas property estimation method&#34;, self.ig_method, &#34;is not recognized. Try &#39;Joback&#39; or &#39;Benson&#39;.&#34;)
+            print(&#34;Error! The ideal gas property estimation method&#34;, self.ig_method, &#34;is not recognized. Try &#39;Joback&#39;.&#34;)
 
         if ig_gas_error:
             msg = &#34;The properties of aqueous &#34;+self.name+&#34; could not be &#34; + \
@@ -1739,7 +1714,7 @@ eight digits long.</p>
 <dl>
 <dt id="AqOrg.AqOrg.Estimate"><code class="flex name class">
 <span>class <span class="ident">Estimate</span></span>
-<span>(</span><span>name, ig_method='Joback', show=True, group_data=None, test=False, state='aq', **kwargs)</span>
+<span>(</span><span>name, ig_method='Joback', show=True, group_data=None, test=False, state='aq', save=False, **kwargs)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Estimate thermodynamic properties of an aqueous organic molecule.</p>
@@ -1750,13 +1725,18 @@ eight digits long.</p>
 properties estimated.</dd>
 <dt><strong><code>ig_method</code></strong> :&ensp;<code>str</code>, default <code>"Joback"</code></dt>
 <dd>Group contribution method for estimating ideal gas properties. Accepts
-"Joback" or "Benson".</dd>
+"Joback". Previously supported "Benson", but no longer.</dd>
 <dt><strong><code>show</code></strong> :&ensp;<code>bool</code>, default <code>True</code></dt>
 <dd>Show a diagram of the molecule?</dd>
 <dt><strong><code>group_data</code></strong> :&ensp;<code>str</code>, optional</dt>
 <dd>Name of a CSV containing custom group contribution data.</dd>
 <dt><strong><code>test</code></strong> :&ensp;<code>bool</code>, default <code>False</code></dt>
 <dd>Perform a simple group matching test instead of estimating properties?</dd>
+<dt><strong><code>state</code></strong> :&ensp;<code>str</code>, default <code>"aq"</code></dt>
+<dd>Can be "aq" or "gas". Estimate the properties of an aqueous molecule or
+an ideal gas?</dd>
+<dt><strong><code>save</code></strong> :&ensp;<code>bool</code>, default <code>False</code></dt>
+<dd>Save molecular structure figures as PNG and SVG?</dd>
 <dt><strong><code>**kwargs</code></strong> :&ensp;<code>numeric</code> or <code>str</code>, optional</dt>
 <dd>
 <p>Known standard state partial molal thermodynamic properties at 298.15 K
@@ -1826,7 +1806,7 @@ package (see <a href="https://chnosz.net/manual/thermo.html">https://chnosz.net/
     
     ig_method : str, default &#34;Joback&#34;
         Group contribution method for estimating ideal gas properties. Accepts
-        &#34;Joback&#34; or &#34;Benson&#34;.
+        &#34;Joback&#34;. Previously supported &#34;Benson&#34;, but no longer.
                        
     show : bool, default True
         Show a diagram of the molecule?
@@ -1836,6 +1816,13 @@ package (see <a href="https://chnosz.net/manual/thermo.html">https://chnosz.net/
     
     test : bool, default False
         Perform a simple group matching test instead of estimating properties?
+
+    state : str, default &#34;aq&#34;
+        Can be &#34;aq&#34; or &#34;gas&#34;. Estimate the properties of an aqueous molecule or
+        an ideal gas?
+
+    save : bool, default False
+        Save molecular structure figures as PNG and SVG?
     
     **kwargs : numeric or str, optional
         Known standard state partial molal thermodynamic properties at 298.15 K
@@ -1897,7 +1884,7 @@ package (see <a href="https://chnosz.net/manual/thermo.html">https://chnosz.net/
     &#34;&#34;&#34;
     
     def __init__(self, name, ig_method=&#34;Joback&#34;, show=True, group_data=None,
-                       test=False, state=&#39;aq&#39;, **kwargs):
+                       test=False, state=&#39;aq&#39;, save=False, **kwargs):
                        # E_units=&#34;J&#34; # not implemented... tricky because groups
                                      # are in both kJ and J units.
 
@@ -1953,7 +1940,7 @@ package (see <a href="https://chnosz.net/manual/thermo.html">https://chnosz.net/
             raise Exception(mssg)
 
         if show:
-            self.__display_molecule()
+            self.__display_molecule(save=save)
 
         if test:
             print(self.__test_group_match())            
@@ -2129,18 +2116,6 @@ package (see <a href="https://chnosz.net/manual/thermo.html">https://chnosz.net/
             os.makedirs(&#34;mol_png&#34;, exist_ok=True)
             #Draw.MolToFile( mol, &#34;mol_svg/&#34;+self.name+&#34;.svg&#34; )
             Draw.MolToFile(mol_smiles, &#34;mol_png/&#34;+self.name+&#34;.png&#34;)
-    
-    def __BensonHSCp(self, print_groups=False):
-        this_smile = self.pcp_compound[0].canonical_smiles
-        lib = GroupLibrary.Load(&#39;BensonGA&#39;)
-        descriptors = lib.GetDescriptors(this_smile)
-        if print_groups:
-            print(descriptors)
-        thermochem = lib.Estimate(descriptors,&#39;thermochem&#39;)
-        H = thermochem.get_H(298.15, units=&#34;kJ/mol&#34;)
-        S = thermochem.get_S(298.15, units=&#34;J/mol/K&#34;)
-        Cp = thermochem.get_Cp(298.15, units=&#34;J/mol/K&#34;)
-        return H, S, Cp
 
     
     def __test_group_match(self):
@@ -2320,24 +2295,8 @@ package (see <a href="https://chnosz.net/manual/thermo.html">https://chnosz.net/
             except:
                 ig_gas_error = True
 
-        elif self.ig_method == &#34;Benson&#34;:
-            # Benson estimation of the Gibbs free energy of formation of
-            # the ideal gas (Joule-based).
-            try:
-                Hig_ben, Sig_ben, Cpig_ben = self.__BensonHSCp()
-                if self.Hig == None:
-                    self.Hig = Hig_ben
-                if self.Sig == None:
-                    self.Sig = Sig_ben
-                if self.Cpig == None:
-                    self.Cpig == Cpig_ben
-                delta_Sig = self.Sig - self.Selements
-                if self.Gig == None:
-                    self.Gig = self.Hig - 298.15*delta_Sig/1000
-            except:
-                ig_gas_error = True
         else:
-            print(&#34;Error! The ideal gas property estimation method&#34;, self.ig_method, &#34;is not recognized. Try &#39;Joback&#39; or &#39;Benson&#39;.&#34;)
+            print(&#34;Error! The ideal gas property estimation method&#34;, self.ig_method, &#34;is not recognized. Try &#39;Joback&#39;.&#34;)
 
         if ig_gas_error:
             msg = &#34;The properties of aqueous &#34;+self.name+&#34; could not be &#34; + \
