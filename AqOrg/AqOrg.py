@@ -11,6 +11,13 @@ from chemparse import parse_formula
 import pkg_resources
 from datetime import datetime
 
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning) # TEMPORARY! Disable this once FutureWarning issues have been solved.
+
+# for benson group additivity
+from pgradd.GroupAdd.Library import GroupLibrary
+import pgradd.ThermoChem
+
 def find_HKF(Gh=float('NaN'), V=float('NaN'), Cp=float('NaN'),
              Gf=float('NaN'), Hf=float('NaN'), Saq=float('NaN'),
              charge=float('NaN'), J_to_cal=True, print_eq=False):
@@ -196,11 +203,16 @@ def find_HKF(Gh=float('NaN'), V=float('NaN'), Cp=float('NaN'),
             print("Gh is unavailable and/or charge is not 0, so estimate a2, a4 from Shock and Helgeson 1988, and a1 from Sverjensky et al 2014")
         
         # find a1*10 (j/mol*bar)
-        # Eq 16 in Sverjensky et al 2014, after Plyasunov and Shock 2001, converted to J/mol*bar. This equation is used in the DEW model since it works for charged and noncharged species up to 60kb
-        HKFa1 = (0.1942*V_nonsolv + 1.52)*4.184
-        if print_eq:
-            print("HKFa1 = (0.1942*V_nonsolv + 1.52)*4.184, Eq 16 in Sverjensky et al 2014, after Plyasunov and Shock 2001, converted to J/mol*bar, a1*10 (j/mol*bar)\n")
-            
+        if charge == 0:
+            # Eq 16 in Sverjensky et al 2014, after Plyasunov and Shock 2001, converted to J/mol*bar. This equation is used in the DEW model since it works for charged and noncharged species up to 60kb
+            HKFa1 = (0.1942*V_nonsolv + 1.52)*4.184
+            if print_eq:
+                print("HKFa1 = (0.1942*V_nonsolv + 1.52)*4.184, Eq 16 in Sverjensky et al 2014, after Plyasunov and Shock 2001, converted to J/mol*bar, a1*10 (j/mol*bar)\n")
+                
+        else:
+            HKFa1 = ((0.1304*abs(charge) - 0.0217)*V_nonsolv  + (1.4567*abs(charge)+0.6187))*4.184
+            if print_eq:
+                print("((0.1304*abs(charge) - 0.0217)*V_nonsolv  + (1.4567*abs(charge)+0.6187))*4.184, Eq 8 in Appendix 1 of Sverjensky et al 2014, converted to J/mol*bar, a1*10 (j/mol*bar)\n")
             
         # find a2*10**-2 (j/mol)
         # Eq 8 in Shock and Helgeson 1988, rearranged to solve for a2*10**-2. Sigma is divided by 41.84 due to the conversion of 41.84 cm3 = cal/bar
@@ -467,7 +479,7 @@ class Estimate():
     
     ig_method : str, default "Joback"
         Group contribution method for estimating ideal gas properties. Accepts
-        "Joback". Previously supported "Benson", but no longer.
+        "Joback" or "Benson".
                        
     show : bool, default True
         Show a diagram of the molecule?
@@ -777,6 +789,18 @@ class Estimate():
             os.makedirs("mol_png", exist_ok=True)
             #Draw.MolToFile( mol, "mol_svg/"+self.name+".svg" )
             Draw.MolToFile(mol_smiles, "mol_png/"+self.name+".png")
+    
+    def __BensonHSCp(self, print_groups=False):
+        this_smile = self.pcp_compound[0].canonical_smiles
+        lib = GroupLibrary.Load('BensonGA')
+        descriptors = lib.GetDescriptors(this_smile)
+        if print_groups:
+            print(descriptors)
+        thermochem = lib.Estimate(descriptors,'thermochem')
+        H = thermochem.get_H(298.15, units="kJ/mol")
+        S = thermochem.get_S(298.15, units="J/mol/K")
+        Cp = thermochem.get_Cp(298.15, units="J/mol/K")
+        return H, S, Cp
 
     
     def __test_group_match(self):
@@ -956,8 +980,24 @@ class Estimate():
             except:
                 ig_gas_error = True
 
+        elif self.ig_method == "Benson":
+            # Benson estimation of the Gibbs free energy of formation of
+            # the ideal gas (Joule-based).
+            try:
+                Hig_ben, Sig_ben, Cpig_ben = self.__BensonHSCp()
+                if self.Hig == None:
+                    self.Hig = Hig_ben
+                if self.Sig == None:
+                    self.Sig = Sig_ben
+                if self.Cpig == None:
+                    self.Cpig == Cpig_ben
+                delta_Sig = self.Sig - self.Selements
+                if self.Gig == None:
+                    self.Gig = self.Hig - 298.15*delta_Sig/1000
+            except:
+                ig_gas_error = True
         else:
-            print("Error! The ideal gas property estimation method", self.ig_method, "is not recognized. Try 'Joback'.")
+            print("Error! The ideal gas property estimation method", self.ig_method, "is not recognized. Try 'Joback' or 'Benson'.")
 
         if ig_gas_error:
             msg = "The properties of aqueous "+self.name+" could not be " + \

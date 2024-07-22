@@ -1,0 +1,6 @@
+chemparse
+pubchempy
+sigfig
+pandas
+rdkit
+pgradd

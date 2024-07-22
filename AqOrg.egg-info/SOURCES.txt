@@ -1,0 +1,15 @@
+LICENSE.txt
+README.md
+setup.py
+AqOrg/AqOrg.py
+AqOrg/__init__.py
+AqOrg.egg-info/PKG-INFO
+AqOrg.egg-info/SOURCES.txt
+AqOrg.egg-info/dependency_links.txt
+AqOrg.egg-info/not-zip-safe
+AqOrg.egg-info/requires.txt
+AqOrg.egg-info/top_level.txt
+AqOrg/data/alcohol_demo.csv
+AqOrg/data/element.csv
+AqOrg/data/group_contribution_data.csv
+AqOrg/data/joback_groups.csv

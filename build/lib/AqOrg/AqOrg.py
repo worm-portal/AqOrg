@@ -1,3 +1,6 @@
+import warnings
+warnings.simplefilter(action='ignore', category=SyntaxWarning) # TEMPORARY! Disable this once SyntaxWarning issues have been solved in pubchempy: https://github.com/mcs07/PubChemPy/pull/53
+
 from IPython.display import SVG
 from rdkit import Chem
 from rdkit.Chem import rdDepictor, Draw
@@ -482,6 +485,10 @@ class Estimate():
         Can be "aq" or "gas". Estimate the properties of an aqueous molecule or
         an ideal gas?
 
+    print_eq : bool, default False
+        Print equations used in estimation? Equations are printed in the order
+        they are calculated.
+
     save : bool, default False
         Save molecular structure figures as PNG and SVG?
     
@@ -545,12 +552,14 @@ class Estimate():
     """
     
     def __init__(self, name, ig_method="Joback", show=True, group_data=None,
-                       test=False, state='aq', save=False, **kwargs):
+                       test=False, state='aq', print_eq=False, save=False,
+                       **kwargs):
                        # E_units="J" # not implemented... tricky because groups
                                      # are in both kJ and J units.
 
         self.name = name
         self.ig_method = ig_method
+        self.print_eq = print_eq
         
         # valid kwargs
         self.Gh = None
@@ -1003,7 +1012,8 @@ class Estimate():
                                 Hf=float(self.Haq),
                                 Saq=float(self.Saq),
                                 charge=float(self.charge),
-                                J_to_cal=False)
+                                J_to_cal=False,
+                                print_eq=self.print_eq)
             for param in hkf_dict.keys():
                 self.__setattr__(param, hkf_dict[param])
 
