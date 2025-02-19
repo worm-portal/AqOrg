@@ -33,7 +33,7 @@ C-(C)(H)(O)2,5.21,,1,4.87,,1,,,0,14.39,,1,Plyasunov et al. 2006a,O-[CH](-C)-O,CH
 {O-(CH2)2-O},2.22,0.65,3,-3.79,2.81,6,1,16,8,-1.6,1.25,6,Plyasunov et al. 2006a,O-[CH2]-[CH2]-O,,,diether correction,correction
 C-(CN)(C)(H)2,1.14,0.2,5,-4.3,1.44,3,71,2,2,17.36,0.79,5,Plyasuvov et al. 2006b,N#C-[CH2]-C,,,includes more information than SMARTS 2nd order,proposed correction
 C-(CN)(C)2(H),-0.38,0.28,1,3.08,3.09,1,,,,,,,Plyasuvov et al. 2006b,N#C-[CH](-C)-C,,,includes more information than SMARTS 2nd order,proposed correction
-CN-(C),-20.71,0.18,7,-24.43,1.31,5,8,1,3,20.66,0.53,6,Plyasuvov et al. 2006b,C-[CX2H0]#N,C,,includes more information than SMARTS 2nd order,
+CN-(C),-20.71,0.18,7,-24.43,1.31,5,8,1,3,20.66,0.53,6,Plyasuvov et al. 2006b,C-[CX2H0]#N,CN,,includes more information than SMARTS 2nd order,
 {CN-(CH2)2-CN}corr,2.99,0.9,1,1.6,3.2,1,,,,,,,Plyasuvov et al. 2006b,[CH2](-[CH2]-C#N)-C#N,,,correction for lower nitriles,correction
 {CN-(CH2)3-CN}corr,2.58,0.8,1,0,,1,,,,,,,Plyasuvov et al. 2006b,[CH2](-[CH2]-[CH2]-C#N)-C#N,,,correction for lower nitriles,correction
 C=C,-10.23,0.85,29,0.6,3.4,17,-25,,7,-7.3,,5,"Plyasunov & Shock (2000), Table 6",[CR0H0]=[CR0H0],CC,double bond in linear hydrocarbon,non-terminal alkene where both carbons are branched,

@@ -38,384 +38,7 @@ import os
 from chemparse import parse_formula
 import pkg_resources
 from datetime import datetime
-
-def find_HKF(Gh=float(&#39;NaN&#39;), V=float(&#39;NaN&#39;), Cp=float(&#39;NaN&#39;),
-             Gf=float(&#39;NaN&#39;), Hf=float(&#39;NaN&#39;), Saq=float(&#39;NaN&#39;),
-             charge=float(&#39;NaN&#39;), J_to_cal=True, print_eq=False):
-    
-    &#34;&#34;&#34;
-    Estimate HKF parameters from standard state thermodynamic properties of an
-    aqueous organic molecule.
-    
-    Parameters
-    ----------
-    Gh : numeric
-        Standard state partial molal Gibbs free energy of hydration in kJ/mol.
-    
-    V : numeric
-        Standard state partial molal volume in cm3/mol.
-    
-    Cp : numeric
-        Standard state partial molal heat capacity in J/mol/K.
-    
-    Gf : numeric
-        Standard state partial molal Gibbs free energy of formation in kJ/mol.
-    
-    Hf : numeric
-        Standard state partial molal enthalpy of formation in kJ/mol.
-    
-    Saq : numeric
-        Standard state partial molal third law entropy in J/mol/K.
-    
-    charge : numeric
-        The charge of the molecule.
-    
-    J_to_cal : bool, default True
-        Should the output be calorie-based? kJ/mol will be converted to cal/mol
-        and J/mol/K will be converted to cal/mol/K.
-    
-    print_eq : bool, default False
-        Print equations used in estimation? Equations are printed in the order
-        they are calculated.
-        
-    Returns
-    ----------
-    out : dict
-        A dictonary of properties and parameters. These will either be
-        Joule-based or calorie-based depending on the parameter `J_to_cal`.
-    &#34;&#34;&#34;
-
-    # define eta (angstroms*cal/mol)
-    eta = (1.66027*10**5)
-
-    # define YBorn (1/K)
-    YBorn = -5.81*10**-5
-
-    # define QBorn (1/bar)
-    QBorn = 5.90*10**-7
-
-    # define XBorn (1/K**2)
-    XBorn = -3.09*10**-7
-    
-    if print_eq:
-        print(&#34;eta = {} (angstroms*cal/mol), YBorn = {} (1/K), QBorn = {} (1/bar), XBorn = {} (1/K**2)\n&#34;.format(eta, YBorn, QBorn, XBorn))
-
-    # define abs_protonBorn (cal/mol), mentioned in text after Eq 47 in Shock and Helgeson 1988
-    abs_protonBorn = (0.5387 * 10**5)
-    if print_eq:
-        print(&#34;abs_protonBorn = (0.5387 * 10**5), mentioned in text after Eq 47 in Shock and Helgeson 1988\n&#34;)
-
-
-    if not pd.isnull(Gh) and charge == 0:
-        if print_eq:
-            print(&#34;Gh is provided and charge equals zero so estimate omega from Plyasunov and Shock 2001...&#34;)
-
-        # find omega*10**-5 (j/mol) if neutral and Gh available
-        # Eq 8 in Plyasunov and Shock 2001
-        HKFomega = 2.61+(324.1/(Gh-90.6))
-        if print_eq:
-            print(&#34;HKFomega = 2.61+(324.1/(Gh-90.6)), Eq 8 in Plyasunov and Shock 2001, omega*10**-5 (j/mol)\n&#34;)
-
-    elif charge == 0:
-        if print_eq:
-            print(&#34;Gh is not provided and charge equals zero so estimate omega for neutral solutes from Shock and Helgeson 1990...&#34;)
-
-        # find omega*10**-5 (j/mol) if neutral and Gh unavailable
-        # Eq 61 in Shock and Helgeson 1990 for NONVOLATILE neutral organic species
-        HKFomega = (10**-5)*((-1514.4*(Saq/4.184)) + (0.34*10**5))*4.184
-        if print_eq:
-            print(&#34;HKFomega = (10**-5)*((-1514.4*(Saq/4.184)) + (0.34*10**5))*4.184, Eq 61 in Shock and Helgeson 1990, omega*10**-5 (j/mol)\n&#34;)
-
-    elif charge != 0:
-        if print_eq:
-            print(&#34;Gh is not provided and charge does not equal zero so estimate omega for ionic species from Shock and Helgeson 1990...&#34;)
-            
-        # define alphaZ (described in text after Eq 59 in Shock and Helgeson 1990)
-        if (abs(charge) == 1):
-            alphaZ = 72
-        elif (abs(charge) == 2):
-            alphaZ = 141
-        elif (abs(charge) == 3):
-            alphaZ = 211
-        elif (abs(charge) == 4):
-            alphaZ = 286
-        else:
-            alphaZ = float(&#39;NaN&#39;)
-        if print_eq and alphaZ != float(&#39;NaN&#39;):
-            print(&#34;alphaZ = {} because charge = {}, described in text after Eq 59 in Shock and Helgeson 1990\n&#34;.format(alphaZ, charge))
-            
-        # define BZ
-        BZ = ((-alphaZ*eta)/(YBorn*eta - 100)) - charge * \
-            abs_protonBorn  # Eq 55 in Shock and Helgeson 1990
-        if print_eq:
-            print(&#34;BZ = ((-alphaZ*eta)/(YBorn*eta - 100)) - charge * abs_protonBorn, Eq 55 in Shock and Helgeson 1990\n&#34;)
-            
-        # find ion omega*10**-5, (J/mol) if charged
-        HKFomega = (10**-5)*(-1514.4*(Saq/4.184) + BZ) * \
-            4.184  # Eq 58 in Shock and Helgeson 1990
-        if print_eq:
-            print(&#34;HKFomega = (10**-5)*(-1514.4*(Saq/4.184) + BZ) * 4.184, Eq 58 in Shock and Helgeson 1990, omega*10**-5, (J/mol)\n&#34;)
-
-        ### METHOD FOR INORGANIC AQUEOUS ELECTROLYTES USING SHOCK AND HELGESON 1988:
-
-        # find rej (angstroms), ions only
-        #rej &lt;- ((charge**2)*(eta*YBorn-100))/((Saq/4.184)-71.5*abs(charge)) # Eqs 46+56+57 in Shock and Helgeson 1988
-
-        # find ion absolute omega*10**-5, (cal/mol)
-        #HKFomega_abs_ion &lt;- (eta*(charge**2))/rej # Eq 45 in Shock and Helgeson 1988
-
-        # find ion omega*10**-5, (J/mol)
-        #HKFomega2 &lt;- (10**-5)*(HKFomega_abs_ion-(charge*abs_protonBorn))*4.184 # Eq 47 in Shock and Helgeson 1988
-
-    else:
-        HKFomega = float(&#39;NaN&#39;)
-
-    # find delta V solvation (cm3/mol)
-    # Eq 5 in Shock and Helgeson 1988, along with a conversion of 10 cm3 = 1 joule/bar
-    V_solv = -(HKFomega/10**-5)*QBorn*10
-    if print_eq:
-        print(&#34;V_solv = -(HKFomega/10**-5)*QBorn*10, Eq 5 in Shock and Helgeson 1988, along with a conversion of 10 cm3 = 1 joule/bar, delta V solvation (cm3/mol)\n&#34;)
-
-    # find delta V nonsolvation (cm3/mol)
-    V_nonsolv = V - V_solv  # Eq 4 in Shock and Helgeson 1988
-    if print_eq:
-        print(&#34;V_nonsolv = V - V_solv, Eq 4 in Shock and Helgeson 1988, delta V nonsolvation (cm3/mol)\n&#34;)
-
-    # find sigma (cm3/mol)
-    HKFsigma = 1.11*V_nonsolv + 1.8  # Eq 87 in Shock and Helgeson
-    if print_eq:
-        print(&#34;HKFsigma = 1.11*V_nonsolv + 1.8, Eq 87 in Shock and Helgeson, sigma (cm3/mol)\n&#34;)
-        
-    # find delta Cp solvation (J/mol*K)
-    # Eq 35 in Shock and Helgeson 1988 dCpsolv = omega*T*X
-    cp_solv = ((HKFomega/10**-5)*298.15*XBorn)
-    if print_eq:
-        print(&#34;cp_solv = ((HKFomega/10**-5)*298.15*XBorn), Eq 35 in Shock and Helgeson 1988, dCpsolv = omega*T*X, delta Cp solvation (J/mol*K)\n&#34;)
-        
-    # find delta Cp nonsolvation (J/mol*K)
-    cp_nonsolv = Cp - cp_solv  # Eq 29 in Shock and Helgeson 1988
-    if print_eq:
-        print(&#34;cp_nonsolv = Cp - cp_solv, Eq 29 in Shock and Helgeson 1988, delta Cp nonsolvation (J/mol*K)\n&#34;)
-        
-    if not pd.isnull(Gh) and charge == 0:
-        if print_eq:
-            print(&#34;Gh is provided and charge is neutral, so estimate a1, a2, and a4 from Plysunov and Shock 2001&#34;)
-        # find a1*10 (j/mol*bar)
-        # Eq 10 in Plyasunov and Shock 2001
-        HKFa1 = (0.820-((1.858*10**-3)*(Gh)))*V
-        # why is this different than Eq 16 in Sverjensky et al 2014? Regardless, results seem to be very close using this eq vs. Eq 16.
-        if print_eq:
-            print(&#34;HKFa1 = (0.820-((1.858*10**-3)*(Gh)))*V, Eq 10 in Plyasunov and Shock 2001, a1*10 (j/mol*bar)\n&#34;)
-            
-        # find a2*10**-2 (j/mol)
-        # Eq 11 in Plyasunov and Shock 2001
-        HKFa2 = (0.648+((0.00481)*(Gh)))*V
-        if print_eq:
-            print(&#34;HKFa2 = (0.648+((0.00481)*(Gh)))*V, Eq 11 in Plyasunov and Shock 2001, a2*10**-2 (j/mol)\n&#34;)
-            
-        # find a4*10**-4 (j*K/mol)
-        # Eq 12 in Plyasunov and Shock 2001
-        HKFa4 = 8.10-(0.746*HKFa2)+(0.219*Gh)
-        if print_eq:
-            print(&#34;HKFa4 = 8.10-(0.746*HKFa2)+(0.219*Gh), Eq 12 in Plyasunov and Shock 2001, a4*10**-4 (j*K/mol)\n&#34;)
-
-    else:
-        if print_eq:
-            print(&#34;Gh is unavailable and/or charge is not 0, so estimate a2, a4 from Shock and Helgeson 1988, and a1 from Sverjensky et al 2014&#34;)
-        
-        # find a1*10 (j/mol*bar)
-        # Eq 16 in Sverjensky et al 2014, after Plyasunov and Shock 2001, converted to J/mol*bar. This equation is used in the DEW model since it works for charged and noncharged species up to 60kb
-        HKFa1 = (0.1942*V_nonsolv + 1.52)*4.184
-        if print_eq:
-            print(&#34;HKFa1 = (0.1942*V_nonsolv + 1.52)*4.184, Eq 16 in Sverjensky et al 2014, after Plyasunov and Shock 2001, converted to J/mol*bar, a1*10 (j/mol*bar)\n&#34;)
-            
-            
-        # find a2*10**-2 (j/mol)
-        # Eq 8 in Shock and Helgeson 1988, rearranged to solve for a2*10**-2. Sigma is divided by 41.84 due to the conversion of 41.84 cm3 = cal/bar
-        HKFa2 = (10**-2)*(((HKFsigma/41.84) -
-                        ((HKFa1/10)/4.184))/(1/(2601)))*4.184
-        if print_eq:
-            print(&#34;HKFa2 = (10**-2)*(((HKFsigma/41.84) - ((HKFa1/10)/4.184))/(1/(2601)))*4.184, Eq 8 in Shock and Helgeson 1988, rearranged to solve for a2*10**-2 (j/mol). Sigma is divided by 41.84 due to the conversion of 41.84 cm3 = cal/bar\n&#34;)
-            
-        # find a4*10**-4 (j*K/mol)
-        # Eq 88 in Shock and Helgeson 1988, solve for a4*10**-4
-        HKFa4 = (10**-4)*(-4.134*(HKFa2/4.184)-27790)*4.184
-        if print_eq:
-            print(&#34;HKFa4 = (10**-4)*(-4.134*(HKFa2/4.184)-27790)*4.184, Eq 88 in Shock and Helgeson 1988, a4*10**-4 (j*K/mol)\n&#34;)
-            
-#     else:
-#         HKFa1 = float(&#39;NaN&#39;)
-#         HKFa2 = float(&#39;NaN&#39;)
-#         HKFa3 = float(&#39;NaN&#39;)
-#         HKFa4 = float(&#39;NaN&#39;)
-#         print(&#34;HKF parameters a1, a2, a3, and a4 could not be estimated.\n&#34;)
-           
-    # find c2*10**-4 (j*K/mol)
-    if not pd.isnull(Gh) and charge == 0:
-        HKFc2 = 21.4+(0.849*Gh)  # Eq 14 in Plyasunov and Shock 2001
-        if print_eq:
-            print(&#34;HKFc2 = 21.4+(0.849*Gh), Eq 14 in Plyasunov and Shock 2001, c2*10**-4 (j*K/mol)\n&#34;)
-#     elif not pd.isnull(Cp) and charge != 0:
-    else:
-        # Eq 89 in Shock and Helgeson 1988
-        HKFc2 = (0.2037*(Cp/4.184) - 3.0346)*4.184
-        if print_eq:
-            print(&#34;HKFc2 = (0.2037*(Cp/4.184) - 3.0346)*4.184, Eq 89 in Shock and Helgeson 1988, c2*10**-4 (j*K/mol)\n&#34;)
-#     else:
-#         HKFc2 = float(&#39;NaN&#39;)
-#         if print_eq:
-#             print(&#34;HKF parameter c2 could not be estimated.&#34;)
-            
-    # find c1 (j/mol*K)
-    # Eq 31 in Shock and Helgeson 1988, rearranged to solve for c1
-    HKFc1 = cp_nonsolv-(((HKFc2)/10**-4)*(1/(298.15-228))**2)
-    if print_eq:
-        print(&#34;HKFc1 = cp_nonsolv-(((HKFc2)/10**-4)*(1/(298.15-228))**2), Eq 31 in Shock and Helgeson 1988, rearranged to solve for c1 (j/mol*K)\n&#34;)
-            
-    # find a3 (j*K/mol*bar)
-    # Eq 11 in Shock and Helgeson 1988, rearranged to solve for a3. V is divided by 10 due to the conversion of 10 cm3 = J/bar
-    HKFa3 = (((V/10)-(HKFa1/10)-((HKFa2/10**-2)/2601) +
-            ((HKFomega/10**-5)*QBorn))/(1/(298.15-228)))-((HKFa4/10**-4)/2601)
-    if print_eq:
-        print(&#34;HKFa3 = (((V/10)-(HKFa1/10)-((HKFa2/10**-2)/2601) + ((HKFomega/10**-5)*QBorn))/(1/(298.15-228)))-((HKFa4/10**-4)/2601), Eq 11 in Shock and Helgeson 1988, rearranged to solve for a3 (j*K/mol*bar). V is divided by 10 due to the conversion of 10 cm3 = J/bar\n&#34;)
-            
-    if J_to_cal:
-        conv = 4.184
-    else:
-        conv = 1
-
-    out = {
-        &#34;G&#34;: (Gf/conv)*1000,
-        &#34;H&#34;: (Hf/conv)*1000,
-        &#34;S&#34;: Saq/conv,
-        &#34;Cp&#34;: Cp/conv,
-        &#34;V&#34;: V,
-        &#34;a1&#34;: HKFa1/conv,
-        &#34;a2&#34;: HKFa2/conv,
-        &#34;a3&#34;: HKFa3/conv,
-        &#34;a4&#34;: HKFa4/conv,
-        &#34;c1&#34;: HKFc1/conv,
-        &#34;c2&#34;: HKFc2/conv,
-        &#34;omega&#34;: HKFomega/conv,
-        &#34;Z&#34;: charge,
-        &#34;Vsolv&#34;: V_solv,
-        &#34;Vnonsolv&#34;: V_nonsolv,
-        &#34;sigma&#34;: HKFsigma}
-
-    return out
-
-
-def find_HKF_test(print_eq=False):
-    
-    &#34;&#34;&#34;
-    Test the HKF estimation function by regenerating published values.
-    
-    Parameters
-    ----------
-    print_eq : bool, default False
-        Print equations used in estimation?
-    &#34;&#34;&#34;
-    
-    #print(&#34;\n---------------------------------------------&#34;)
-    
-#     print(&#34;phenolate\n---------&#34;)
-#     print(&#34;Input parameters:&#34;)
-#     print(&#34;Gh=-80.74, V=68.16, Cp=105, Gf=5.795, Hf=-129.0, Saq=76.6, charge=-1\n&#34;)
-#     out = find_HKF(Gh=-80.74, V=68.16, Cp=105,
-#                    Gf=5.795, Hf=-129.0, Saq=76.6, charge=-1,
-#                    print_eq=print_eq)
-    
-#     print(&#34;phenolate, 1988 method\n---------&#34;)
-#     print(&#34;Input parameters:&#34;)
-#     print(&#34;Gh=float(&#39;NaN&#39;), V=68.16, Cp=105, Gf=5.795, Hf=-129.0, Saq=76.6, charge=-1\n&#34;)
-#     out = find_HKF(Gh=float(&#39;NaN&#39;), V=68.16, Cp=105,
-#                    Gf=5.795, Hf=-129.0, Saq=76.6, charge=-1,
-#                    print_eq=print_eq)
-
-#     print(&#34;Be+2\n---------&#34;)
-#     print(&#34;Input parameters:&#34;)
-#     print(&#34;V=-25.4, Cp=-1.3*4.184, Gf=(-83500*4.184)/1000, Hf=(-91500*4.184)/1000, Saq=-55.7*4.184, charge=2\n&#34;)
-#     out = find_HKF(V=-25.4, Cp=-1.3*4.184, Gf=(-83500*4.184)/1000,
-#                    Hf=(-91500*4.184)/1000, Saq=-55.7*4.184, charge=2,
-#                    print_eq=print_eq)
-    
-#     print(&#34;NH4+\n---------&#34;)
-#     print(&#34;Input parameters:&#34;)
-#     print(&#34;V=18.13, Cp=15.74*4.184, Gf=(-18990*4.184)/1000, Hf=(-31850*4.184)/1000, Saq=26.57*4.184, charge=1\n&#34;)
-#     out = find_HKF(V=18.13, Cp=15.74*4.184, Gf=(-18990*4.184)/1000,
-#                    Hf=(-31850*4.184)/1000, Saq=26.57*4.184, charge=1,
-#                    print_eq=print_eq)
-    
-#     print(&#34;Li+\n---------&#34;)
-#     print(&#34;Input parameters:&#34;)
-#     print(&#34;V=-0.87, Cp=14.2*4.184, Gf=(-69933*4.184)/1000, Hf=(-66552*4.184)/1000, Saq=2.70*4.184, charge=1\n&#34;)
-#     out = find_HKF(V=-0.87, Cp=14.2*4.184, Gf=(-69933*4.184)/1000,
-#                    Hf=(-66552*4.184)/1000, Saq=2.70*4.184, charge=1,
-#                    print_eq=print_eq)
-
-    # Compare to table 4 of Plyasunov and Shock 2001
-    # (may be slightly different due to using Eq 16 in Sverjensky et al 2014 for calculating a1)
-    print(&#34;PLYASUNOV AND SHOCK 2001, TABLE 4\n---------------------------------------------&#34;)
-    
-    print(&#34;SO2\n---------&#34;)
-    print(&#34;Input parameters:&#34;)
-    print(&#34;Gh=-0.51, V=39.0, Cp=146, charge=0, J_to_cal=False\n&#34;)
-    out = find_HKF(Gh=-0.51, V=39.0, Cp=146, charge=0, J_to_cal=False, print_eq=print_eq)
-    pub = {&#34;omega&#34;:&#34;-0.95&#34;, &#34;a1&#34;:&#34;32.02&#34;, &#34;a2&#34;:&#34;25.17&#34;,
-           &#34;a3&#34;:&#34;18.71&#34;, &#34;a4&#34;:&#34;-10.79&#34;, &#34;c1&#34;:&#34;93.2&#34;, &#34;c2&#34;:&#34;20.97&#34;}
-    print(&#34;Published: {}, \tCalculated: {}, \tomega*10**-5&#34;.format(pub[&#34;omega&#34;], round(out[&#34;omega&#34;], 2)))
-    print(&#34;Published: {}, \tCalculated: {}, \ta1*10&#34;.format(pub[&#34;a1&#34;], round(out[&#34;a1&#34;], 2)))
-    print(&#34;Published: {}, \tCalculated: {}, \ta2*10**-2&#34;.format(pub[&#34;a2&#34;], round(out[&#34;a2&#34;], 2)))
-    print(&#34;Published: {}, \tCalculated: {}, \ta3&#34;.format(pub[&#34;a3&#34;], round(out[&#34;a3&#34;], 2)))
-    print(&#34;Published: {}, \tCalculated: {}, \ta4*10**-4&#34;.format(pub[&#34;a4&#34;], round(out[&#34;a4&#34;], 2)))
-    print(&#34;Published: {}, \tCalculated: {}, \tc1&#34;.format(pub[&#34;c1&#34;], round(out[&#34;c1&#34;], 1)))
-    print(&#34;Published: {}, \tCalculated: {}, \tc2*10**-4&#34;.format(pub[&#34;c2&#34;], round(out[&#34;c2&#34;], 2)))
-    print(&#34;&#34;)
-    
-    print(&#34;Pyridine\n---------&#34;)
-    print(&#34;Input parameters:&#34;)
-    print(&#34;Gh=-11.7, V=77.1, Cp=306, charge=0, J_to_cal=False\n&#34;)
-    out = find_HKF(Gh=-11.7, V=77.1, Cp=306, charge=0, J_to_cal=False, print_eq=print_eq)
-    pub = {&#34;omega&#34;:&#34;-0.56&#34;, &#34;a1&#34;:&#34;64.89&#34;, &#34;a2&#34;:&#34;45.62&#34;,
-           &#34;a3&#34;:&#34;69.94&#34;, &#34;a4&#34;:&#34;-28.50&#34;, &#34;c1&#34;:&#34;278.1&#34;, &#34;c2&#34;:&#34;11.47&#34;}
-    print(&#34;Published: {}, \tCalculated: {}, \tomega*10**-5&#34;.format(pub[&#34;omega&#34;], round(out[&#34;omega&#34;], 2)))
-    print(&#34;Published: {}, \tCalculated: {}, \ta1*10&#34;.format(pub[&#34;a1&#34;], round(out[&#34;a1&#34;], 2)))
-    print(&#34;Published: {}, \tCalculated: {}, \ta2*10**-2&#34;.format(pub[&#34;a2&#34;], round(out[&#34;a2&#34;], 2)))
-    print(&#34;Published: {}, \tCalculated: {}, \ta3&#34;.format(pub[&#34;a3&#34;], round(out[&#34;a3&#34;], 2)))
-    print(&#34;Published: {}, \tCalculated: {}, \ta4*10**-4&#34;.format(pub[&#34;a4&#34;], round(out[&#34;a4&#34;], 2)))
-    print(&#34;Published: {}, \tCalculated: {}, \tc1&#34;.format(pub[&#34;c1&#34;], round(out[&#34;c1&#34;], 1)))
-    print(&#34;Published: {}, \tCalculated: {}, \tc2*10**-4&#34;.format(pub[&#34;c2&#34;], round(out[&#34;c2&#34;], 2)))
-    print(&#34;&#34;)
-    
-    print(&#34;1,4-Butanediol\n---------&#34;)
-    print(&#34;Input parameters:&#34;)
-    print(&#34;Gh=-37.7, V=88.23, Cp=347, charge=0, J_to_cal=False\n&#34;)
-    out = find_HKF(Gh=-37.7, V=88.23, Cp=347, charge=0, J_to_cal=False, print_eq=print_eq)
-    pub = {&#34;omega&#34;:&#34;0.08&#34;, &#34;a1&#34;:&#34;78.50&#34;, &#34;a2&#34;:&#34;41.17&#34;,
-           &#34;a3&#34;:&#34;76.32&#34;, &#34;a4&#34;:&#34;-30.87&#34;, &#34;c1&#34;:&#34;369.2&#34;, &#34;c2&#34;:&#34;-10.61&#34;}
-    print(&#34;Published: {}, \tCalculated: {}, \tomega*10**-5&#34;.format(pub[&#34;omega&#34;], round(out[&#34;omega&#34;], 2)))
-    print(&#34;Published: {}, \tCalculated: {}, \ta1*10&#34;.format(pub[&#34;a1&#34;], round(out[&#34;a1&#34;], 2)))
-    print(&#34;Published: {}, \tCalculated: {}, \ta2*10**-2&#34;.format(pub[&#34;a2&#34;], round(out[&#34;a2&#34;], 2)))
-    print(&#34;Published: {}, \tCalculated: {}, \ta3&#34;.format(pub[&#34;a3&#34;], round(out[&#34;a3&#34;], 2)))
-    print(&#34;Published: {}, \tCalculated: {}, \ta4*10**-4&#34;.format(pub[&#34;a4&#34;], round(out[&#34;a4&#34;], 2)))
-    print(&#34;Published: {}, \tCalculated: {}, \tc1&#34;.format(pub[&#34;c1&#34;], round(out[&#34;c1&#34;], 1)))
-    print(&#34;Published: {}, \tCalculated: {}, \tc2*10**-4&#34;.format(pub[&#34;c2&#34;], round(out[&#34;c2&#34;], 2)))
-    print(&#34;&#34;)
-    
-    print(&#34;beta-alanine\n---------&#34;)
-    print(&#34;Input parameters:&#34;)
-    print(&#34;Gh=-74, V=58.7, Cp=76, charge=0, J_to_cal=False\n&#34;)
-    out = find_HKF(Gh=-74, V=58.7, Cp=76, charge=0, J_to_cal=False, print_eq=print_eq)
-    pub = {&#34;omega&#34;:&#34;0.64&#34;, &#34;a1&#34;:&#34;56.17&#34;, &#34;a2&#34;:&#34;17.14&#34;,
-           &#34;a3&#34;:&#34;54.55&#34;, &#34;a4&#34;:&#34;-20.90&#34;, &#34;c1&#34;:&#34;165.5&#34;, &#34;c2&#34;:&#34;-41.43&#34;}
-    print(&#34;Published: {}, \tCalculated: {}, \tomega*10**-5&#34;.format(pub[&#34;omega&#34;], round(out[&#34;omega&#34;], 2)))
-    print(&#34;Published: {}, \tCalculated: {}, \ta1*10&#34;.format(pub[&#34;a1&#34;], round(out[&#34;a1&#34;], 2)))
-    print(&#34;Published: {}, \tCalculated: {}, \ta2*10**-2&#34;.format(pub[&#34;a2&#34;], round(out[&#34;a2&#34;], 2)))
-    print(&#34;Published: {}, \tCalculated: {}, \ta3&#34;.format(pub[&#34;a3&#34;], round(out[&#34;a3&#34;], 2)))
-    print(&#34;Published: {}, \tCalculated: {}, \ta4*10**-4&#34;.format(pub[&#34;a4&#34;], round(out[&#34;a4&#34;], 2)))
-    print(&#34;Published: {}, \tCalculated: {}, \tc1&#34;.format(pub[&#34;c1&#34;], round(out[&#34;c1&#34;], 1)))
-    print(&#34;Published: {}, \tCalculated: {}, \tc2*10**-4&#34;.format(pub[&#34;c2&#34;], round(out[&#34;c2&#34;], 2)))
-    print(&#34;&#34;)
+from WORMutils import Error_Handler, find_HKF
 
 def find_sigfigs(x):
     
@@ -492,10 +115,6 @@ class Estimate():
     name : str
         Name of the aqueous organic molecule that will have its thermodynamic
         properties estimated.
-    
-    ig_method : str, default &#34;Joback&#34;
-        Group contribution method for estimating ideal gas properties. Accepts
-        &#34;Joback&#34;. Previously supported &#34;Benson&#34;, but no longer.
                        
     show : bool, default True
         Show a diagram of the molecule?
@@ -569,16 +188,23 @@ class Estimate():
         Table of estimated thermodynamic properties and parameters. The format
         is styled after Jeff Dick&#39;s OBIGT thermodynamic table in the CHNOSZ
         package (see https://chnosz.net/manual/thermo.html).
+
+    hide_traceback : bool, default True
+        Hide traceback message when encountering errors handled by this function?
+        When True, error messages handled by this class will be short and to
+        the point.
     
     &#34;&#34;&#34;
     
-    def __init__(self, name, ig_method=&#34;Joback&#34;, show=True, group_data=None,
-                       test=False, state=&#39;aq&#39;, save=False, **kwargs):
+    def __init__(self, name, show=True, group_data=None,
+                       test=False, state=&#39;aq&#39;, save=False, hide_traceback=True,
+                       **kwargs):
                        # E_units=&#34;J&#34; # not implemented... tricky because groups
                                      # are in both kJ and J units.
 
+        self.err_handler = Error_Handler(clean=hide_traceback)
+        
         self.name = name
-        self.ig_method = ig_method
         
         # valid kwargs
         self.Gh = None
@@ -609,24 +235,24 @@ class Estimate():
         
         # load group contribution data
         if group_data == None:
-            group_data = pkg_resources.resource_stream(__name__, &#34;data/group_contribution_data.csv&#34;)
-#         elif &#39;.csv&#39; in group_data:
-#             pass
-#         else:
-#             raise Exception(&#34;group_data must be a CSV file.&#34;)
+            if state == &#34;aq&#34;:
+                group_data = pkg_resources.resource_stream(__name__, &#34;data/group_contribution_data.csv&#34;)
+            elif state == &#34;gas&#34;:
+                group_data=pkg_resources.resource_stream(__name__, &#39;data/joback_groups.csv&#39;)
+            else:
+                self.err_handler.raise_exception(&#34;State is unrecognized. Must be either &#39;aq&#39; or &#39;gas&#39;.&#34;)
         self.__load_group_data(group_data)
         
         # look up compound on PubChem
         self.pcp_compound = pcp.get_compounds(self.name, &#34;name&#34;)
         if len(self.pcp_compound) == 0:
-            raise Exception(&#34;Could not find &#39;&#34; + self.name + &#34;&#39; in PubChem&#39;s online database.&#34;)
+            self.err_handler.raise_exception(&#34;Could not find &#39;&#34; + self.name + &#34;&#39; in PubChem&#39;s online database.&#34;)
         self.smiles = self.pcp_compound[0].canonical_smiles
         self.formula = self.pcp_compound[0].molecular_formula
         self.formula_dict = parse_formula(self.formula)
         
         if &#34;-&#34; in self.formula_dict.keys() or &#34;+&#34; in self.formula_dict.keys():
-            mssg = self.name + &#34; cannot be estimated because it has a net charge.&#34;
-            raise Exception(mssg)
+            self.err_handler.raise_exception(self.name + &#34; cannot be estimated because it has a net charge.&#34;)
 
         if show:
             self.__display_molecule(save=save)
@@ -771,7 +397,7 @@ class Estimate():
                 str(total_formula_dict)
             mssg = mssg + &#34;\nIncomplete group matches:\n&#34; + \
                 str({k:v for k,v in zip(match_dict.keys(), match_dict.values()) if v!= 0})
-            raise Exception(mssg)
+            self.err_handler.raise_exception(mssg)
         
         # add molecular formula to match dictionary
         match_dict[&#34;formula&#34;] = self.__dict_to_formula(total_formula_dict)
@@ -806,7 +432,7 @@ class Estimate():
             #Draw.MolToFile( mol, &#34;mol_svg/&#34;+self.name+&#34;.svg&#34; )
             Draw.MolToFile(mol_smiles, &#34;mol_png/&#34;+self.name+&#34;.png&#34;)
 
-    
+
     def __test_group_match(self):
         match_dict = self.__match_groups()
         return {key:value for key,value in zip(match_dict.keys(), match_dict.values()) if value !=0}
@@ -841,10 +467,9 @@ class Estimate():
                 if len(error_groups) == 0:
                     self.__setattr__(prop, mol_prop+joback_props[prop])
                 else:
-                    msg = self.name + &#34; encountered errors with group(s): &#34; +\
-                        str(error_groups) + &#34;. Are these groups assigned &#34;+\
-                        &#34;ideal gas properties in the Joback data file?&#34;
-                    raise Exception(msg)
+                    self.err_handler.raise_exception(&#34;&#34; + self.name + &#34; encountered errors with group(s): &#34;
+                        &#34;&#34;+str(error_groups) + &#34;. Are these groups assigned &#34;
+                        &#34;ideal gas properties in the Joback data file?&#34;)
             
         # calculate Cpig
         T=298.15
@@ -959,7 +584,7 @@ class Estimate():
                     msg = self.name + &#34; encountered errors with group(s): &#34; +\
                         str(error_groups) + &#34;. Are these groups assigned &#34;+\
                         &#34;hydration properties in the data file?&#34;
-                    raise Exception(msg)
+                    self.err_handler.raise_exception(msg)
         
         ig_gas_error = False
         if self.Gig != None and self.Hig != None and self.Sig != None and self.Cpig != None:
@@ -967,7 +592,7 @@ class Estimate():
             # TODO: Modify if statement to allow calculating remainder if
             # two out of three are provided for: Gig, Hig, Sig
             pass
-        elif self.ig_method == &#34;Joback&#34;:
+        else:
             # Joback estimation of the Gibbs free energy of formation of the
             # ideal gas (Joule-based).
             try:
@@ -984,14 +609,10 @@ class Estimate():
             except:
                 ig_gas_error = True
 
-        else:
-            print(&#34;Error! The ideal gas property estimation method&#34;, self.ig_method, &#34;is not recognized. Try &#39;Joback&#39;.&#34;)
-
         if ig_gas_error:
-            msg = &#34;The properties of aqueous &#34;+self.name+&#34; could not be &#34; + \
-                &#34;estimated because its ideal gas properties could not be &#34; + \
-                &#34;estimated with the &#34;+self.ig_method+&#34; method.&#34;
-            raise Exception(msg)
+            self.err_handler.raise_exception(&#34;The properties of aqueous &#34;+self.name+&#34; could not be &#34;
+                &#34;estimated because its ideal gas properties could not be &#34;
+                &#34;estimated with the Joback method.&#34;)
                 
         # estimate the Gibbs free energy of formation of the aqueous molecule by summing
         # its ideal gas and hydration properties.
@@ -1024,15 +645,23 @@ class Estimate():
 
         # calculate HKF parameters
         try:
-            hkf_dict = find_HKF(Gh=float(self.Gh),
-                                V=float(self.V),
-                                Cp=float(self.Cpaq),
-                                Gf=float(self.Gaq),
-                                Hf=float(self.Haq),
-                                Saq=float(self.Saq),
-                                charge=float(self.charge),
-                                J_to_cal=False)
-            for param in hkf_dict.keys():
+            # find_HKF requires calories
+            hkf_dict, eq = find_HKF(Gh=float(self.Gh)*1000/4.184,
+                                    V=float(self.V),
+                                    Cp=float(self.Cpaq)/4.184,
+                                    Gf=float(self.Gaq)*1000/4.184,
+                                    Hf=float(self.Haq)*1000/4.184,
+                                    Saq=float(self.Saq)/4.184,
+                                    Z=float(self.charge))
+
+            properties_to_convert = [&#34;G&#34;, &#34;H&#34;, &#34;S&#34;, &#34;Cp&#34;, &#34;a1&#34;, &#34;a2&#34;, &#34;a3&#34;, &#34;a4&#34;, &#34;c1&#34;, &#34;c2&#34;, &#34;omega&#34;]
+            for k,v in zip(hkf_dict.keys(), hkf_dict.values()):
+                if k in properties_to_convert:
+                    hkf_dict[k] = v*4.184
+                else:
+                    hkf_dict[k] = v
+
+            for param in [&#34;a1&#34;, &#34;a2&#34;, &#34;a3&#34;, &#34;a4&#34;, &#34;c1&#34;, &#34;c2&#34;, &#34;omega&#34;]:
                 self.__setattr__(param, hkf_dict[param])
 
         except:
@@ -1041,29 +670,45 @@ class Estimate():
 
     # convert dataframe into an OBIGT table with an option to write to a csv file.
     def __convert_to_OBIGT(self):
-        
-        df = pd.DataFrame({&#39;name&#39;:self.name,
-                           &#39;abbrv&#39;:self.formula,
-                           &#39;formula&#39;:self.formula,
-                           &#39;state&#39;:&#39;aq&#39;,
-                           &#39;ref1&#39;:&#39;AqOrg&#39;,
-                           &#39;ref2&#39;:&#39;GrpAdd&#39;,
-                           &#39;date&#39;:datetime.now().strftime(&#34;%d/%m/%Y %H:%M:%S&#34;),
-                           &#39;E_units&#39;:&#39;J&#39;,
-                           &#39;G&#39;:float(self.Gaq)*1000,
-                           &#39;H&#39;:float(self.Haq)*1000,
-                           &#39;S&#39;:float(self.Saq),
-                           &#39;Cp&#39;:float(self.Cpaq),
-                           &#39;V&#39;:float(self.V),
-                           &#39;a1.a&#39;:float(self.a1),
-                           &#39;a2.b&#39;:float(self.a2),
-                           &#39;a3.c&#39;:float(self.a3),
-                           &#39;a4.d&#39;:float(self.a4),
-                           &#39;c1.e&#39;:float(self.c1),
-                           &#39;c2.f&#39;:float(self.c2),
-                           &#39;omega.lambda&#39;:float(self.omega),
-                           &#39;z.T&#39;:self.charge}, index=[0])
 
+
+        df_prop = {&#39;name&#39;:[self.name],
+                   &#39;abbrv&#39;:[self.formula],
+                   &#39;formula&#39;:[self.formula],
+                   &#39;state&#39;:[&#39;aq&#39;],
+                   &#39;ref1&#39;:[&#39;AqOrg&#39;],
+                   &#39;ref2&#39;:[&#39;GrpAdd&#39;],
+                   &#39;date&#39;:[datetime.now().strftime(&#34;%d/%m/%Y %H:%M:%S&#34;)],
+                   &#39;E_units&#39;:[&#39;J&#39;],
+                   &#39;G&#39;:[float(self.Gaq)*1000],
+                   &#39;H&#39;:[float(self.Haq)*1000],
+                   &#39;S&#39;:[float(self.Saq)],
+                   &#39;Cp&#39;:[float(self.Cpaq)],
+                   &#39;V&#39;:[float(self.V)]}
+        try:
+            # if HKF parameters could be estimated
+            df_hkf = {&#39;a1.a&#39;:[float(self.a1)],
+                      &#39;a2.b&#39;:[float(self.a2)],
+                      &#39;a3.c&#39;:[float(self.a3)],
+                      &#39;a4.d&#39;:[float(self.a4)],
+                      &#39;c1.e&#39;:[float(self.c1)],
+                      &#39;c2.f&#39;:[float(self.c2)],
+                      &#39;omega.lambda&#39;:[float(self.omega)],
+                      &#39;z.T&#39;:[self.charge]}
+        except:
+            df_hkf = {&#39;a1.a&#39;:[float(&#34;NaN&#34;)],
+                      &#39;a2.b&#39;:[float(&#34;NaN&#34;)],
+                      &#39;a3.c&#39;:[float(&#34;NaN&#34;)],
+                      &#39;a4.d&#39;:[float(&#34;NaN&#34;)],
+                      &#39;c1.e&#39;:[float(&#34;NaN&#34;)],
+                      &#39;c2.f&#39;:[float(&#34;NaN&#34;)],
+                      &#39;omega.lambda&#39;:[float(&#34;NaN&#34;)],
+                      &#39;z.T&#39;:[self.charge]}
+
+        df_prop.update(df_hkf)
+        
+        df = pd.DataFrame(df_prop)
+        
         return df
 
     def __estimate(self):
@@ -1174,438 +819,6 @@ with the Joback method:</p>
             &#39;Sig&#39;:ig_est.Sig, &#39;Cpig&#39;:ig_est.Cpig}</code></pre>
 </details>
 </dd>
-<dt id="AqOrg.AqOrg.find_HKF"><code class="name flex">
-<span>def <span class="ident">find_HKF</span></span>(<span>Gh=nan, V=nan, Cp=nan, Gf=nan, Hf=nan, Saq=nan, charge=nan, J_to_cal=True, print_eq=False)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Estimate HKF parameters from standard state thermodynamic properties of an
-aqueous organic molecule.</p>
-<h2 id="parameters">Parameters</h2>
-<dl>
-<dt><strong><code>Gh</code></strong> :&ensp;<code>numeric</code></dt>
-<dd>Standard state partial molal Gibbs free energy of hydration in kJ/mol.</dd>
-<dt><strong><code>V</code></strong> :&ensp;<code>numeric</code></dt>
-<dd>Standard state partial molal volume in cm3/mol.</dd>
-<dt><strong><code>Cp</code></strong> :&ensp;<code>numeric</code></dt>
-<dd>Standard state partial molal heat capacity in J/mol/K.</dd>
-<dt><strong><code>Gf</code></strong> :&ensp;<code>numeric</code></dt>
-<dd>Standard state partial molal Gibbs free energy of formation in kJ/mol.</dd>
-<dt><strong><code>Hf</code></strong> :&ensp;<code>numeric</code></dt>
-<dd>Standard state partial molal enthalpy of formation in kJ/mol.</dd>
-<dt><strong><code>Saq</code></strong> :&ensp;<code>numeric</code></dt>
-<dd>Standard state partial molal third law entropy in J/mol/K.</dd>
-<dt><strong><code>charge</code></strong> :&ensp;<code>numeric</code></dt>
-<dd>The charge of the molecule.</dd>
-<dt><strong><code>J_to_cal</code></strong> :&ensp;<code>bool</code>, default <code>True</code></dt>
-<dd>Should the output be calorie-based? kJ/mol will be converted to cal/mol
-and J/mol/K will be converted to cal/mol/K.</dd>
-<dt><strong><code>print_eq</code></strong> :&ensp;<code>bool</code>, default <code>False</code></dt>
-<dd>Print equations used in estimation? Equations are printed in the order
-they are calculated.</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><strong><code>out</code></strong> :&ensp;<code>dict</code></dt>
-<dd>A dictonary of properties and parameters. These will either be
-Joule-based or calorie-based depending on the parameter <code>J_to_cal</code>.</dd>
-</dl></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def find_HKF(Gh=float(&#39;NaN&#39;), V=float(&#39;NaN&#39;), Cp=float(&#39;NaN&#39;),
-             Gf=float(&#39;NaN&#39;), Hf=float(&#39;NaN&#39;), Saq=float(&#39;NaN&#39;),
-             charge=float(&#39;NaN&#39;), J_to_cal=True, print_eq=False):
-    
-    &#34;&#34;&#34;
-    Estimate HKF parameters from standard state thermodynamic properties of an
-    aqueous organic molecule.
-    
-    Parameters
-    ----------
-    Gh : numeric
-        Standard state partial molal Gibbs free energy of hydration in kJ/mol.
-    
-    V : numeric
-        Standard state partial molal volume in cm3/mol.
-    
-    Cp : numeric
-        Standard state partial molal heat capacity in J/mol/K.
-    
-    Gf : numeric
-        Standard state partial molal Gibbs free energy of formation in kJ/mol.
-    
-    Hf : numeric
-        Standard state partial molal enthalpy of formation in kJ/mol.
-    
-    Saq : numeric
-        Standard state partial molal third law entropy in J/mol/K.
-    
-    charge : numeric
-        The charge of the molecule.
-    
-    J_to_cal : bool, default True
-        Should the output be calorie-based? kJ/mol will be converted to cal/mol
-        and J/mol/K will be converted to cal/mol/K.
-    
-    print_eq : bool, default False
-        Print equations used in estimation? Equations are printed in the order
-        they are calculated.
-        
-    Returns
-    ----------
-    out : dict
-        A dictonary of properties and parameters. These will either be
-        Joule-based or calorie-based depending on the parameter `J_to_cal`.
-    &#34;&#34;&#34;
-
-    # define eta (angstroms*cal/mol)
-    eta = (1.66027*10**5)
-
-    # define YBorn (1/K)
-    YBorn = -5.81*10**-5
-
-    # define QBorn (1/bar)
-    QBorn = 5.90*10**-7
-
-    # define XBorn (1/K**2)
-    XBorn = -3.09*10**-7
-    
-    if print_eq:
-        print(&#34;eta = {} (angstroms*cal/mol), YBorn = {} (1/K), QBorn = {} (1/bar), XBorn = {} (1/K**2)\n&#34;.format(eta, YBorn, QBorn, XBorn))
-
-    # define abs_protonBorn (cal/mol), mentioned in text after Eq 47 in Shock and Helgeson 1988
-    abs_protonBorn = (0.5387 * 10**5)
-    if print_eq:
-        print(&#34;abs_protonBorn = (0.5387 * 10**5), mentioned in text after Eq 47 in Shock and Helgeson 1988\n&#34;)
-
-
-    if not pd.isnull(Gh) and charge == 0:
-        if print_eq:
-            print(&#34;Gh is provided and charge equals zero so estimate omega from Plyasunov and Shock 2001...&#34;)
-
-        # find omega*10**-5 (j/mol) if neutral and Gh available
-        # Eq 8 in Plyasunov and Shock 2001
-        HKFomega = 2.61+(324.1/(Gh-90.6))
-        if print_eq:
-            print(&#34;HKFomega = 2.61+(324.1/(Gh-90.6)), Eq 8 in Plyasunov and Shock 2001, omega*10**-5 (j/mol)\n&#34;)
-
-    elif charge == 0:
-        if print_eq:
-            print(&#34;Gh is not provided and charge equals zero so estimate omega for neutral solutes from Shock and Helgeson 1990...&#34;)
-
-        # find omega*10**-5 (j/mol) if neutral and Gh unavailable
-        # Eq 61 in Shock and Helgeson 1990 for NONVOLATILE neutral organic species
-        HKFomega = (10**-5)*((-1514.4*(Saq/4.184)) + (0.34*10**5))*4.184
-        if print_eq:
-            print(&#34;HKFomega = (10**-5)*((-1514.4*(Saq/4.184)) + (0.34*10**5))*4.184, Eq 61 in Shock and Helgeson 1990, omega*10**-5 (j/mol)\n&#34;)
-
-    elif charge != 0:
-        if print_eq:
-            print(&#34;Gh is not provided and charge does not equal zero so estimate omega for ionic species from Shock and Helgeson 1990...&#34;)
-            
-        # define alphaZ (described in text after Eq 59 in Shock and Helgeson 1990)
-        if (abs(charge) == 1):
-            alphaZ = 72
-        elif (abs(charge) == 2):
-            alphaZ = 141
-        elif (abs(charge) == 3):
-            alphaZ = 211
-        elif (abs(charge) == 4):
-            alphaZ = 286
-        else:
-            alphaZ = float(&#39;NaN&#39;)
-        if print_eq and alphaZ != float(&#39;NaN&#39;):
-            print(&#34;alphaZ = {} because charge = {}, described in text after Eq 59 in Shock and Helgeson 1990\n&#34;.format(alphaZ, charge))
-            
-        # define BZ
-        BZ = ((-alphaZ*eta)/(YBorn*eta - 100)) - charge * \
-            abs_protonBorn  # Eq 55 in Shock and Helgeson 1990
-        if print_eq:
-            print(&#34;BZ = ((-alphaZ*eta)/(YBorn*eta - 100)) - charge * abs_protonBorn, Eq 55 in Shock and Helgeson 1990\n&#34;)
-            
-        # find ion omega*10**-5, (J/mol) if charged
-        HKFomega = (10**-5)*(-1514.4*(Saq/4.184) + BZ) * \
-            4.184  # Eq 58 in Shock and Helgeson 1990
-        if print_eq:
-            print(&#34;HKFomega = (10**-5)*(-1514.4*(Saq/4.184) + BZ) * 4.184, Eq 58 in Shock and Helgeson 1990, omega*10**-5, (J/mol)\n&#34;)
-
-        ### METHOD FOR INORGANIC AQUEOUS ELECTROLYTES USING SHOCK AND HELGESON 1988:
-
-        # find rej (angstroms), ions only
-        #rej &lt;- ((charge**2)*(eta*YBorn-100))/((Saq/4.184)-71.5*abs(charge)) # Eqs 46+56+57 in Shock and Helgeson 1988
-
-        # find ion absolute omega*10**-5, (cal/mol)
-        #HKFomega_abs_ion &lt;- (eta*(charge**2))/rej # Eq 45 in Shock and Helgeson 1988
-
-        # find ion omega*10**-5, (J/mol)
-        #HKFomega2 &lt;- (10**-5)*(HKFomega_abs_ion-(charge*abs_protonBorn))*4.184 # Eq 47 in Shock and Helgeson 1988
-
-    else:
-        HKFomega = float(&#39;NaN&#39;)
-
-    # find delta V solvation (cm3/mol)
-    # Eq 5 in Shock and Helgeson 1988, along with a conversion of 10 cm3 = 1 joule/bar
-    V_solv = -(HKFomega/10**-5)*QBorn*10
-    if print_eq:
-        print(&#34;V_solv = -(HKFomega/10**-5)*QBorn*10, Eq 5 in Shock and Helgeson 1988, along with a conversion of 10 cm3 = 1 joule/bar, delta V solvation (cm3/mol)\n&#34;)
-
-    # find delta V nonsolvation (cm3/mol)
-    V_nonsolv = V - V_solv  # Eq 4 in Shock and Helgeson 1988
-    if print_eq:
-        print(&#34;V_nonsolv = V - V_solv, Eq 4 in Shock and Helgeson 1988, delta V nonsolvation (cm3/mol)\n&#34;)
-
-    # find sigma (cm3/mol)
-    HKFsigma = 1.11*V_nonsolv + 1.8  # Eq 87 in Shock and Helgeson
-    if print_eq:
-        print(&#34;HKFsigma = 1.11*V_nonsolv + 1.8, Eq 87 in Shock and Helgeson, sigma (cm3/mol)\n&#34;)
-        
-    # find delta Cp solvation (J/mol*K)
-    # Eq 35 in Shock and Helgeson 1988 dCpsolv = omega*T*X
-    cp_solv = ((HKFomega/10**-5)*298.15*XBorn)
-    if print_eq:
-        print(&#34;cp_solv = ((HKFomega/10**-5)*298.15*XBorn), Eq 35 in Shock and Helgeson 1988, dCpsolv = omega*T*X, delta Cp solvation (J/mol*K)\n&#34;)
-        
-    # find delta Cp nonsolvation (J/mol*K)
-    cp_nonsolv = Cp - cp_solv  # Eq 29 in Shock and Helgeson 1988
-    if print_eq:
-        print(&#34;cp_nonsolv = Cp - cp_solv, Eq 29 in Shock and Helgeson 1988, delta Cp nonsolvation (J/mol*K)\n&#34;)
-        
-    if not pd.isnull(Gh) and charge == 0:
-        if print_eq:
-            print(&#34;Gh is provided and charge is neutral, so estimate a1, a2, and a4 from Plysunov and Shock 2001&#34;)
-        # find a1*10 (j/mol*bar)
-        # Eq 10 in Plyasunov and Shock 2001
-        HKFa1 = (0.820-((1.858*10**-3)*(Gh)))*V
-        # why is this different than Eq 16 in Sverjensky et al 2014? Regardless, results seem to be very close using this eq vs. Eq 16.
-        if print_eq:
-            print(&#34;HKFa1 = (0.820-((1.858*10**-3)*(Gh)))*V, Eq 10 in Plyasunov and Shock 2001, a1*10 (j/mol*bar)\n&#34;)
-            
-        # find a2*10**-2 (j/mol)
-        # Eq 11 in Plyasunov and Shock 2001
-        HKFa2 = (0.648+((0.00481)*(Gh)))*V
-        if print_eq:
-            print(&#34;HKFa2 = (0.648+((0.00481)*(Gh)))*V, Eq 11 in Plyasunov and Shock 2001, a2*10**-2 (j/mol)\n&#34;)
-            
-        # find a4*10**-4 (j*K/mol)
-        # Eq 12 in Plyasunov and Shock 2001
-        HKFa4 = 8.10-(0.746*HKFa2)+(0.219*Gh)
-        if print_eq:
-            print(&#34;HKFa4 = 8.10-(0.746*HKFa2)+(0.219*Gh), Eq 12 in Plyasunov and Shock 2001, a4*10**-4 (j*K/mol)\n&#34;)
-
-    else:
-        if print_eq:
-            print(&#34;Gh is unavailable and/or charge is not 0, so estimate a2, a4 from Shock and Helgeson 1988, and a1 from Sverjensky et al 2014&#34;)
-        
-        # find a1*10 (j/mol*bar)
-        # Eq 16 in Sverjensky et al 2014, after Plyasunov and Shock 2001, converted to J/mol*bar. This equation is used in the DEW model since it works for charged and noncharged species up to 60kb
-        HKFa1 = (0.1942*V_nonsolv + 1.52)*4.184
-        if print_eq:
-            print(&#34;HKFa1 = (0.1942*V_nonsolv + 1.52)*4.184, Eq 16 in Sverjensky et al 2014, after Plyasunov and Shock 2001, converted to J/mol*bar, a1*10 (j/mol*bar)\n&#34;)
-            
-            
-        # find a2*10**-2 (j/mol)
-        # Eq 8 in Shock and Helgeson 1988, rearranged to solve for a2*10**-2. Sigma is divided by 41.84 due to the conversion of 41.84 cm3 = cal/bar
-        HKFa2 = (10**-2)*(((HKFsigma/41.84) -
-                        ((HKFa1/10)/4.184))/(1/(2601)))*4.184
-        if print_eq:
-            print(&#34;HKFa2 = (10**-2)*(((HKFsigma/41.84) - ((HKFa1/10)/4.184))/(1/(2601)))*4.184, Eq 8 in Shock and Helgeson 1988, rearranged to solve for a2*10**-2 (j/mol). Sigma is divided by 41.84 due to the conversion of 41.84 cm3 = cal/bar\n&#34;)
-            
-        # find a4*10**-4 (j*K/mol)
-        # Eq 88 in Shock and Helgeson 1988, solve for a4*10**-4
-        HKFa4 = (10**-4)*(-4.134*(HKFa2/4.184)-27790)*4.184
-        if print_eq:
-            print(&#34;HKFa4 = (10**-4)*(-4.134*(HKFa2/4.184)-27790)*4.184, Eq 88 in Shock and Helgeson 1988, a4*10**-4 (j*K/mol)\n&#34;)
-            
-#     else:
-#         HKFa1 = float(&#39;NaN&#39;)
-#         HKFa2 = float(&#39;NaN&#39;)
-#         HKFa3 = float(&#39;NaN&#39;)
-#         HKFa4 = float(&#39;NaN&#39;)
-#         print(&#34;HKF parameters a1, a2, a3, and a4 could not be estimated.\n&#34;)
-           
-    # find c2*10**-4 (j*K/mol)
-    if not pd.isnull(Gh) and charge == 0:
-        HKFc2 = 21.4+(0.849*Gh)  # Eq 14 in Plyasunov and Shock 2001
-        if print_eq:
-            print(&#34;HKFc2 = 21.4+(0.849*Gh), Eq 14 in Plyasunov and Shock 2001, c2*10**-4 (j*K/mol)\n&#34;)
-#     elif not pd.isnull(Cp) and charge != 0:
-    else:
-        # Eq 89 in Shock and Helgeson 1988
-        HKFc2 = (0.2037*(Cp/4.184) - 3.0346)*4.184
-        if print_eq:
-            print(&#34;HKFc2 = (0.2037*(Cp/4.184) - 3.0346)*4.184, Eq 89 in Shock and Helgeson 1988, c2*10**-4 (j*K/mol)\n&#34;)
-#     else:
-#         HKFc2 = float(&#39;NaN&#39;)
-#         if print_eq:
-#             print(&#34;HKF parameter c2 could not be estimated.&#34;)
-            
-    # find c1 (j/mol*K)
-    # Eq 31 in Shock and Helgeson 1988, rearranged to solve for c1
-    HKFc1 = cp_nonsolv-(((HKFc2)/10**-4)*(1/(298.15-228))**2)
-    if print_eq:
-        print(&#34;HKFc1 = cp_nonsolv-(((HKFc2)/10**-4)*(1/(298.15-228))**2), Eq 31 in Shock and Helgeson 1988, rearranged to solve for c1 (j/mol*K)\n&#34;)
-            
-    # find a3 (j*K/mol*bar)
-    # Eq 11 in Shock and Helgeson 1988, rearranged to solve for a3. V is divided by 10 due to the conversion of 10 cm3 = J/bar
-    HKFa3 = (((V/10)-(HKFa1/10)-((HKFa2/10**-2)/2601) +
-            ((HKFomega/10**-5)*QBorn))/(1/(298.15-228)))-((HKFa4/10**-4)/2601)
-    if print_eq:
-        print(&#34;HKFa3 = (((V/10)-(HKFa1/10)-((HKFa2/10**-2)/2601) + ((HKFomega/10**-5)*QBorn))/(1/(298.15-228)))-((HKFa4/10**-4)/2601), Eq 11 in Shock and Helgeson 1988, rearranged to solve for a3 (j*K/mol*bar). V is divided by 10 due to the conversion of 10 cm3 = J/bar\n&#34;)
-            
-    if J_to_cal:
-        conv = 4.184
-    else:
-        conv = 1
-
-    out = {
-        &#34;G&#34;: (Gf/conv)*1000,
-        &#34;H&#34;: (Hf/conv)*1000,
-        &#34;S&#34;: Saq/conv,
-        &#34;Cp&#34;: Cp/conv,
-        &#34;V&#34;: V,
-        &#34;a1&#34;: HKFa1/conv,
-        &#34;a2&#34;: HKFa2/conv,
-        &#34;a3&#34;: HKFa3/conv,
-        &#34;a4&#34;: HKFa4/conv,
-        &#34;c1&#34;: HKFc1/conv,
-        &#34;c2&#34;: HKFc2/conv,
-        &#34;omega&#34;: HKFomega/conv,
-        &#34;Z&#34;: charge,
-        &#34;Vsolv&#34;: V_solv,
-        &#34;Vnonsolv&#34;: V_nonsolv,
-        &#34;sigma&#34;: HKFsigma}
-
-    return out</code></pre>
-</details>
-</dd>
-<dt id="AqOrg.AqOrg.find_HKF_test"><code class="name flex">
-<span>def <span class="ident">find_HKF_test</span></span>(<span>print_eq=False)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Test the HKF estimation function by regenerating published values.</p>
-<h2 id="parameters">Parameters</h2>
-<dl>
-<dt><strong><code>print_eq</code></strong> :&ensp;<code>bool</code>, default <code>False</code></dt>
-<dd>Print equations used in estimation?</dd>
-</dl></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def find_HKF_test(print_eq=False):
-    
-    &#34;&#34;&#34;
-    Test the HKF estimation function by regenerating published values.
-    
-    Parameters
-    ----------
-    print_eq : bool, default False
-        Print equations used in estimation?
-    &#34;&#34;&#34;
-    
-    #print(&#34;\n---------------------------------------------&#34;)
-    
-#     print(&#34;phenolate\n---------&#34;)
-#     print(&#34;Input parameters:&#34;)
-#     print(&#34;Gh=-80.74, V=68.16, Cp=105, Gf=5.795, Hf=-129.0, Saq=76.6, charge=-1\n&#34;)
-#     out = find_HKF(Gh=-80.74, V=68.16, Cp=105,
-#                    Gf=5.795, Hf=-129.0, Saq=76.6, charge=-1,
-#                    print_eq=print_eq)
-    
-#     print(&#34;phenolate, 1988 method\n---------&#34;)
-#     print(&#34;Input parameters:&#34;)
-#     print(&#34;Gh=float(&#39;NaN&#39;), V=68.16, Cp=105, Gf=5.795, Hf=-129.0, Saq=76.6, charge=-1\n&#34;)
-#     out = find_HKF(Gh=float(&#39;NaN&#39;), V=68.16, Cp=105,
-#                    Gf=5.795, Hf=-129.0, Saq=76.6, charge=-1,
-#                    print_eq=print_eq)
-
-#     print(&#34;Be+2\n---------&#34;)
-#     print(&#34;Input parameters:&#34;)
-#     print(&#34;V=-25.4, Cp=-1.3*4.184, Gf=(-83500*4.184)/1000, Hf=(-91500*4.184)/1000, Saq=-55.7*4.184, charge=2\n&#34;)
-#     out = find_HKF(V=-25.4, Cp=-1.3*4.184, Gf=(-83500*4.184)/1000,
-#                    Hf=(-91500*4.184)/1000, Saq=-55.7*4.184, charge=2,
-#                    print_eq=print_eq)
-    
-#     print(&#34;NH4+\n---------&#34;)
-#     print(&#34;Input parameters:&#34;)
-#     print(&#34;V=18.13, Cp=15.74*4.184, Gf=(-18990*4.184)/1000, Hf=(-31850*4.184)/1000, Saq=26.57*4.184, charge=1\n&#34;)
-#     out = find_HKF(V=18.13, Cp=15.74*4.184, Gf=(-18990*4.184)/1000,
-#                    Hf=(-31850*4.184)/1000, Saq=26.57*4.184, charge=1,
-#                    print_eq=print_eq)
-    
-#     print(&#34;Li+\n---------&#34;)
-#     print(&#34;Input parameters:&#34;)
-#     print(&#34;V=-0.87, Cp=14.2*4.184, Gf=(-69933*4.184)/1000, Hf=(-66552*4.184)/1000, Saq=2.70*4.184, charge=1\n&#34;)
-#     out = find_HKF(V=-0.87, Cp=14.2*4.184, Gf=(-69933*4.184)/1000,
-#                    Hf=(-66552*4.184)/1000, Saq=2.70*4.184, charge=1,
-#                    print_eq=print_eq)
-
-    # Compare to table 4 of Plyasunov and Shock 2001
-    # (may be slightly different due to using Eq 16 in Sverjensky et al 2014 for calculating a1)
-    print(&#34;PLYASUNOV AND SHOCK 2001, TABLE 4\n---------------------------------------------&#34;)
-    
-    print(&#34;SO2\n---------&#34;)
-    print(&#34;Input parameters:&#34;)
-    print(&#34;Gh=-0.51, V=39.0, Cp=146, charge=0, J_to_cal=False\n&#34;)
-    out = find_HKF(Gh=-0.51, V=39.0, Cp=146, charge=0, J_to_cal=False, print_eq=print_eq)
-    pub = {&#34;omega&#34;:&#34;-0.95&#34;, &#34;a1&#34;:&#34;32.02&#34;, &#34;a2&#34;:&#34;25.17&#34;,
-           &#34;a3&#34;:&#34;18.71&#34;, &#34;a4&#34;:&#34;-10.79&#34;, &#34;c1&#34;:&#34;93.2&#34;, &#34;c2&#34;:&#34;20.97&#34;}
-    print(&#34;Published: {}, \tCalculated: {}, \tomega*10**-5&#34;.format(pub[&#34;omega&#34;], round(out[&#34;omega&#34;], 2)))
-    print(&#34;Published: {}, \tCalculated: {}, \ta1*10&#34;.format(pub[&#34;a1&#34;], round(out[&#34;a1&#34;], 2)))
-    print(&#34;Published: {}, \tCalculated: {}, \ta2*10**-2&#34;.format(pub[&#34;a2&#34;], round(out[&#34;a2&#34;], 2)))
-    print(&#34;Published: {}, \tCalculated: {}, \ta3&#34;.format(pub[&#34;a3&#34;], round(out[&#34;a3&#34;], 2)))
-    print(&#34;Published: {}, \tCalculated: {}, \ta4*10**-4&#34;.format(pub[&#34;a4&#34;], round(out[&#34;a4&#34;], 2)))
-    print(&#34;Published: {}, \tCalculated: {}, \tc1&#34;.format(pub[&#34;c1&#34;], round(out[&#34;c1&#34;], 1)))
-    print(&#34;Published: {}, \tCalculated: {}, \tc2*10**-4&#34;.format(pub[&#34;c2&#34;], round(out[&#34;c2&#34;], 2)))
-    print(&#34;&#34;)
-    
-    print(&#34;Pyridine\n---------&#34;)
-    print(&#34;Input parameters:&#34;)
-    print(&#34;Gh=-11.7, V=77.1, Cp=306, charge=0, J_to_cal=False\n&#34;)
-    out = find_HKF(Gh=-11.7, V=77.1, Cp=306, charge=0, J_to_cal=False, print_eq=print_eq)
-    pub = {&#34;omega&#34;:&#34;-0.56&#34;, &#34;a1&#34;:&#34;64.89&#34;, &#34;a2&#34;:&#34;45.62&#34;,
-           &#34;a3&#34;:&#34;69.94&#34;, &#34;a4&#34;:&#34;-28.50&#34;, &#34;c1&#34;:&#34;278.1&#34;, &#34;c2&#34;:&#34;11.47&#34;}
-    print(&#34;Published: {}, \tCalculated: {}, \tomega*10**-5&#34;.format(pub[&#34;omega&#34;], round(out[&#34;omega&#34;], 2)))
-    print(&#34;Published: {}, \tCalculated: {}, \ta1*10&#34;.format(pub[&#34;a1&#34;], round(out[&#34;a1&#34;], 2)))
-    print(&#34;Published: {}, \tCalculated: {}, \ta2*10**-2&#34;.format(pub[&#34;a2&#34;], round(out[&#34;a2&#34;], 2)))
-    print(&#34;Published: {}, \tCalculated: {}, \ta3&#34;.format(pub[&#34;a3&#34;], round(out[&#34;a3&#34;], 2)))
-    print(&#34;Published: {}, \tCalculated: {}, \ta4*10**-4&#34;.format(pub[&#34;a4&#34;], round(out[&#34;a4&#34;], 2)))
-    print(&#34;Published: {}, \tCalculated: {}, \tc1&#34;.format(pub[&#34;c1&#34;], round(out[&#34;c1&#34;], 1)))
-    print(&#34;Published: {}, \tCalculated: {}, \tc2*10**-4&#34;.format(pub[&#34;c2&#34;], round(out[&#34;c2&#34;], 2)))
-    print(&#34;&#34;)
-    
-    print(&#34;1,4-Butanediol\n---------&#34;)
-    print(&#34;Input parameters:&#34;)
-    print(&#34;Gh=-37.7, V=88.23, Cp=347, charge=0, J_to_cal=False\n&#34;)
-    out = find_HKF(Gh=-37.7, V=88.23, Cp=347, charge=0, J_to_cal=False, print_eq=print_eq)
-    pub = {&#34;omega&#34;:&#34;0.08&#34;, &#34;a1&#34;:&#34;78.50&#34;, &#34;a2&#34;:&#34;41.17&#34;,
-           &#34;a3&#34;:&#34;76.32&#34;, &#34;a4&#34;:&#34;-30.87&#34;, &#34;c1&#34;:&#34;369.2&#34;, &#34;c2&#34;:&#34;-10.61&#34;}
-    print(&#34;Published: {}, \tCalculated: {}, \tomega*10**-5&#34;.format(pub[&#34;omega&#34;], round(out[&#34;omega&#34;], 2)))
-    print(&#34;Published: {}, \tCalculated: {}, \ta1*10&#34;.format(pub[&#34;a1&#34;], round(out[&#34;a1&#34;], 2)))
-    print(&#34;Published: {}, \tCalculated: {}, \ta2*10**-2&#34;.format(pub[&#34;a2&#34;], round(out[&#34;a2&#34;], 2)))
-    print(&#34;Published: {}, \tCalculated: {}, \ta3&#34;.format(pub[&#34;a3&#34;], round(out[&#34;a3&#34;], 2)))
-    print(&#34;Published: {}, \tCalculated: {}, \ta4*10**-4&#34;.format(pub[&#34;a4&#34;], round(out[&#34;a4&#34;], 2)))
-    print(&#34;Published: {}, \tCalculated: {}, \tc1&#34;.format(pub[&#34;c1&#34;], round(out[&#34;c1&#34;], 1)))
-    print(&#34;Published: {}, \tCalculated: {}, \tc2*10**-4&#34;.format(pub[&#34;c2&#34;], round(out[&#34;c2&#34;], 2)))
-    print(&#34;&#34;)
-    
-    print(&#34;beta-alanine\n---------&#34;)
-    print(&#34;Input parameters:&#34;)
-    print(&#34;Gh=-74, V=58.7, Cp=76, charge=0, J_to_cal=False\n&#34;)
-    out = find_HKF(Gh=-74, V=58.7, Cp=76, charge=0, J_to_cal=False, print_eq=print_eq)
-    pub = {&#34;omega&#34;:&#34;0.64&#34;, &#34;a1&#34;:&#34;56.17&#34;, &#34;a2&#34;:&#34;17.14&#34;,
-           &#34;a3&#34;:&#34;54.55&#34;, &#34;a4&#34;:&#34;-20.90&#34;, &#34;c1&#34;:&#34;165.5&#34;, &#34;c2&#34;:&#34;-41.43&#34;}
-    print(&#34;Published: {}, \tCalculated: {}, \tomega*10**-5&#34;.format(pub[&#34;omega&#34;], round(out[&#34;omega&#34;], 2)))
-    print(&#34;Published: {}, \tCalculated: {}, \ta1*10&#34;.format(pub[&#34;a1&#34;], round(out[&#34;a1&#34;], 2)))
-    print(&#34;Published: {}, \tCalculated: {}, \ta2*10**-2&#34;.format(pub[&#34;a2&#34;], round(out[&#34;a2&#34;], 2)))
-    print(&#34;Published: {}, \tCalculated: {}, \ta3&#34;.format(pub[&#34;a3&#34;], round(out[&#34;a3&#34;], 2)))
-    print(&#34;Published: {}, \tCalculated: {}, \ta4*10**-4&#34;.format(pub[&#34;a4&#34;], round(out[&#34;a4&#34;], 2)))
-    print(&#34;Published: {}, \tCalculated: {}, \tc1&#34;.format(pub[&#34;c1&#34;], round(out[&#34;c1&#34;], 1)))
-    print(&#34;Published: {}, \tCalculated: {}, \tc2*10**-4&#34;.format(pub[&#34;c2&#34;], round(out[&#34;c2&#34;], 2)))
-    print(&#34;&#34;)</code></pre>
-</details>
-</dd>
 <dt id="AqOrg.AqOrg.find_sigfigs"><code class="name flex">
 <span>def <span class="ident">find_sigfigs</span></span>(<span>x)</span>
 </code></dt>
@@ -1714,7 +927,7 @@ eight digits long.</p>
 <dl>
 <dt id="AqOrg.AqOrg.Estimate"><code class="flex name class">
 <span>class <span class="ident">Estimate</span></span>
-<span>(</span><span>name, ig_method='Joback', show=True, group_data=None, test=False, state='aq', save=False, **kwargs)</span>
+<span>(</span><span>name, show=True, group_data=None, test=False, state='aq', save=False, hide_traceback=True, **kwargs)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Estimate thermodynamic properties of an aqueous organic molecule.</p>
@@ -1723,9 +936,6 @@ eight digits long.</p>
 <dt><strong><code>name</code></strong> :&ensp;<code>str</code></dt>
 <dd>Name of the aqueous organic molecule that will have its thermodynamic
 properties estimated.</dd>
-<dt><strong><code>ig_method</code></strong> :&ensp;<code>str</code>, default <code>"Joback"</code></dt>
-<dd>Group contribution method for estimating ideal gas properties. Accepts
-"Joback". Previously supported "Benson", but no longer.</dd>
 <dt><strong><code>show</code></strong> :&ensp;<code>bool</code>, default <code>True</code></dt>
 <dd>Show a diagram of the molecule?</dd>
 <dt><strong><code>group_data</code></strong> :&ensp;<code>str</code>, optional</dt>
@@ -1788,6 +998,10 @@ for thermodynamics. Chem/Mats-Sci/E.</dd>
 <dd>Table of estimated thermodynamic properties and parameters. The format
 is styled after Jeff Dick's OBIGT thermodynamic table in the CHNOSZ
 package (see <a href="https://chnosz.net/manual/thermo.html">https://chnosz.net/manual/thermo.html</a>).</dd>
+<dt><strong><code>hide_traceback</code></strong> :&ensp;<code>bool</code>, default <code>True</code></dt>
+<dd>Hide traceback message when encountering errors handled by this function?
+When True, error messages handled by this class will be short and to
+the point.</dd>
 </dl></div>
 <details class="source">
 <summary>
@@ -1803,10 +1017,6 @@ package (see <a href="https://chnosz.net/manual/thermo.html">https://chnosz.net/
     name : str
         Name of the aqueous organic molecule that will have its thermodynamic
         properties estimated.
-    
-    ig_method : str, default &#34;Joback&#34;
-        Group contribution method for estimating ideal gas properties. Accepts
-        &#34;Joback&#34;. Previously supported &#34;Benson&#34;, but no longer.
                        
     show : bool, default True
         Show a diagram of the molecule?
@@ -1880,16 +1090,23 @@ package (see <a href="https://chnosz.net/manual/thermo.html">https://chnosz.net/
         Table of estimated thermodynamic properties and parameters. The format
         is styled after Jeff Dick&#39;s OBIGT thermodynamic table in the CHNOSZ
         package (see https://chnosz.net/manual/thermo.html).
+
+    hide_traceback : bool, default True
+        Hide traceback message when encountering errors handled by this function?
+        When True, error messages handled by this class will be short and to
+        the point.
     
     &#34;&#34;&#34;
     
-    def __init__(self, name, ig_method=&#34;Joback&#34;, show=True, group_data=None,
-                       test=False, state=&#39;aq&#39;, save=False, **kwargs):
+    def __init__(self, name, show=True, group_data=None,
+                       test=False, state=&#39;aq&#39;, save=False, hide_traceback=True,
+                       **kwargs):
                        # E_units=&#34;J&#34; # not implemented... tricky because groups
                                      # are in both kJ and J units.
 
+        self.err_handler = Error_Handler(clean=hide_traceback)
+        
         self.name = name
-        self.ig_method = ig_method
         
         # valid kwargs
         self.Gh = None
@@ -1920,24 +1137,24 @@ package (see <a href="https://chnosz.net/manual/thermo.html">https://chnosz.net/
         
         # load group contribution data
         if group_data == None:
-            group_data = pkg_resources.resource_stream(__name__, &#34;data/group_contribution_data.csv&#34;)
-#         elif &#39;.csv&#39; in group_data:
-#             pass
-#         else:
-#             raise Exception(&#34;group_data must be a CSV file.&#34;)
+            if state == &#34;aq&#34;:
+                group_data = pkg_resources.resource_stream(__name__, &#34;data/group_contribution_data.csv&#34;)
+            elif state == &#34;gas&#34;:
+                group_data=pkg_resources.resource_stream(__name__, &#39;data/joback_groups.csv&#39;)
+            else:
+                self.err_handler.raise_exception(&#34;State is unrecognized. Must be either &#39;aq&#39; or &#39;gas&#39;.&#34;)
         self.__load_group_data(group_data)
         
         # look up compound on PubChem
         self.pcp_compound = pcp.get_compounds(self.name, &#34;name&#34;)
         if len(self.pcp_compound) == 0:
-            raise Exception(&#34;Could not find &#39;&#34; + self.name + &#34;&#39; in PubChem&#39;s online database.&#34;)
+            self.err_handler.raise_exception(&#34;Could not find &#39;&#34; + self.name + &#34;&#39; in PubChem&#39;s online database.&#34;)
         self.smiles = self.pcp_compound[0].canonical_smiles
         self.formula = self.pcp_compound[0].molecular_formula
         self.formula_dict = parse_formula(self.formula)
         
         if &#34;-&#34; in self.formula_dict.keys() or &#34;+&#34; in self.formula_dict.keys():
-            mssg = self.name + &#34; cannot be estimated because it has a net charge.&#34;
-            raise Exception(mssg)
+            self.err_handler.raise_exception(self.name + &#34; cannot be estimated because it has a net charge.&#34;)
 
         if show:
             self.__display_molecule(save=save)
@@ -2082,7 +1299,7 @@ package (see <a href="https://chnosz.net/manual/thermo.html">https://chnosz.net/
                 str(total_formula_dict)
             mssg = mssg + &#34;\nIncomplete group matches:\n&#34; + \
                 str({k:v for k,v in zip(match_dict.keys(), match_dict.values()) if v!= 0})
-            raise Exception(mssg)
+            self.err_handler.raise_exception(mssg)
         
         # add molecular formula to match dictionary
         match_dict[&#34;formula&#34;] = self.__dict_to_formula(total_formula_dict)
@@ -2117,7 +1334,7 @@ package (see <a href="https://chnosz.net/manual/thermo.html">https://chnosz.net/
             #Draw.MolToFile( mol, &#34;mol_svg/&#34;+self.name+&#34;.svg&#34; )
             Draw.MolToFile(mol_smiles, &#34;mol_png/&#34;+self.name+&#34;.png&#34;)
 
-    
+
     def __test_group_match(self):
         match_dict = self.__match_groups()
         return {key:value for key,value in zip(match_dict.keys(), match_dict.values()) if value !=0}
@@ -2152,10 +1369,9 @@ package (see <a href="https://chnosz.net/manual/thermo.html">https://chnosz.net/
                 if len(error_groups) == 0:
                     self.__setattr__(prop, mol_prop+joback_props[prop])
                 else:
-                    msg = self.name + &#34; encountered errors with group(s): &#34; +\
-                        str(error_groups) + &#34;. Are these groups assigned &#34;+\
-                        &#34;ideal gas properties in the Joback data file?&#34;
-                    raise Exception(msg)
+                    self.err_handler.raise_exception(&#34;&#34; + self.name + &#34; encountered errors with group(s): &#34;
+                        &#34;&#34;+str(error_groups) + &#34;. Are these groups assigned &#34;
+                        &#34;ideal gas properties in the Joback data file?&#34;)
             
         # calculate Cpig
         T=298.15
@@ -2270,7 +1486,7 @@ package (see <a href="https://chnosz.net/manual/thermo.html">https://chnosz.net/
                     msg = self.name + &#34; encountered errors with group(s): &#34; +\
                         str(error_groups) + &#34;. Are these groups assigned &#34;+\
                         &#34;hydration properties in the data file?&#34;
-                    raise Exception(msg)
+                    self.err_handler.raise_exception(msg)
         
         ig_gas_error = False
         if self.Gig != None and self.Hig != None and self.Sig != None and self.Cpig != None:
@@ -2278,7 +1494,7 @@ package (see <a href="https://chnosz.net/manual/thermo.html">https://chnosz.net/
             # TODO: Modify if statement to allow calculating remainder if
             # two out of three are provided for: Gig, Hig, Sig
             pass
-        elif self.ig_method == &#34;Joback&#34;:
+        else:
             # Joback estimation of the Gibbs free energy of formation of the
             # ideal gas (Joule-based).
             try:
@@ -2295,14 +1511,10 @@ package (see <a href="https://chnosz.net/manual/thermo.html">https://chnosz.net/
             except:
                 ig_gas_error = True
 
-        else:
-            print(&#34;Error! The ideal gas property estimation method&#34;, self.ig_method, &#34;is not recognized. Try &#39;Joback&#39;.&#34;)
-
         if ig_gas_error:
-            msg = &#34;The properties of aqueous &#34;+self.name+&#34; could not be &#34; + \
-                &#34;estimated because its ideal gas properties could not be &#34; + \
-                &#34;estimated with the &#34;+self.ig_method+&#34; method.&#34;
-            raise Exception(msg)
+            self.err_handler.raise_exception(&#34;The properties of aqueous &#34;+self.name+&#34; could not be &#34;
+                &#34;estimated because its ideal gas properties could not be &#34;
+                &#34;estimated with the Joback method.&#34;)
                 
         # estimate the Gibbs free energy of formation of the aqueous molecule by summing
         # its ideal gas and hydration properties.
@@ -2335,15 +1547,23 @@ package (see <a href="https://chnosz.net/manual/thermo.html">https://chnosz.net/
 
         # calculate HKF parameters
         try:
-            hkf_dict = find_HKF(Gh=float(self.Gh),
-                                V=float(self.V),
-                                Cp=float(self.Cpaq),
-                                Gf=float(self.Gaq),
-                                Hf=float(self.Haq),
-                                Saq=float(self.Saq),
-                                charge=float(self.charge),
-                                J_to_cal=False)
-            for param in hkf_dict.keys():
+            # find_HKF requires calories
+            hkf_dict, eq = find_HKF(Gh=float(self.Gh)*1000/4.184,
+                                    V=float(self.V),
+                                    Cp=float(self.Cpaq)/4.184,
+                                    Gf=float(self.Gaq)*1000/4.184,
+                                    Hf=float(self.Haq)*1000/4.184,
+                                    Saq=float(self.Saq)/4.184,
+                                    Z=float(self.charge))
+
+            properties_to_convert = [&#34;G&#34;, &#34;H&#34;, &#34;S&#34;, &#34;Cp&#34;, &#34;a1&#34;, &#34;a2&#34;, &#34;a3&#34;, &#34;a4&#34;, &#34;c1&#34;, &#34;c2&#34;, &#34;omega&#34;]
+            for k,v in zip(hkf_dict.keys(), hkf_dict.values()):
+                if k in properties_to_convert:
+                    hkf_dict[k] = v*4.184
+                else:
+                    hkf_dict[k] = v
+
+            for param in [&#34;a1&#34;, &#34;a2&#34;, &#34;a3&#34;, &#34;a4&#34;, &#34;c1&#34;, &#34;c2&#34;, &#34;omega&#34;]:
                 self.__setattr__(param, hkf_dict[param])
 
         except:
@@ -2352,29 +1572,45 @@ package (see <a href="https://chnosz.net/manual/thermo.html">https://chnosz.net/
 
     # convert dataframe into an OBIGT table with an option to write to a csv file.
     def __convert_to_OBIGT(self):
-        
-        df = pd.DataFrame({&#39;name&#39;:self.name,
-                           &#39;abbrv&#39;:self.formula,
-                           &#39;formula&#39;:self.formula,
-                           &#39;state&#39;:&#39;aq&#39;,
-                           &#39;ref1&#39;:&#39;AqOrg&#39;,
-                           &#39;ref2&#39;:&#39;GrpAdd&#39;,
-                           &#39;date&#39;:datetime.now().strftime(&#34;%d/%m/%Y %H:%M:%S&#34;),
-                           &#39;E_units&#39;:&#39;J&#39;,
-                           &#39;G&#39;:float(self.Gaq)*1000,
-                           &#39;H&#39;:float(self.Haq)*1000,
-                           &#39;S&#39;:float(self.Saq),
-                           &#39;Cp&#39;:float(self.Cpaq),
-                           &#39;V&#39;:float(self.V),
-                           &#39;a1.a&#39;:float(self.a1),
-                           &#39;a2.b&#39;:float(self.a2),
-                           &#39;a3.c&#39;:float(self.a3),
-                           &#39;a4.d&#39;:float(self.a4),
-                           &#39;c1.e&#39;:float(self.c1),
-                           &#39;c2.f&#39;:float(self.c2),
-                           &#39;omega.lambda&#39;:float(self.omega),
-                           &#39;z.T&#39;:self.charge}, index=[0])
 
+
+        df_prop = {&#39;name&#39;:[self.name],
+                   &#39;abbrv&#39;:[self.formula],
+                   &#39;formula&#39;:[self.formula],
+                   &#39;state&#39;:[&#39;aq&#39;],
+                   &#39;ref1&#39;:[&#39;AqOrg&#39;],
+                   &#39;ref2&#39;:[&#39;GrpAdd&#39;],
+                   &#39;date&#39;:[datetime.now().strftime(&#34;%d/%m/%Y %H:%M:%S&#34;)],
+                   &#39;E_units&#39;:[&#39;J&#39;],
+                   &#39;G&#39;:[float(self.Gaq)*1000],
+                   &#39;H&#39;:[float(self.Haq)*1000],
+                   &#39;S&#39;:[float(self.Saq)],
+                   &#39;Cp&#39;:[float(self.Cpaq)],
+                   &#39;V&#39;:[float(self.V)]}
+        try:
+            # if HKF parameters could be estimated
+            df_hkf = {&#39;a1.a&#39;:[float(self.a1)],
+                      &#39;a2.b&#39;:[float(self.a2)],
+                      &#39;a3.c&#39;:[float(self.a3)],
+                      &#39;a4.d&#39;:[float(self.a4)],
+                      &#39;c1.e&#39;:[float(self.c1)],
+                      &#39;c2.f&#39;:[float(self.c2)],
+                      &#39;omega.lambda&#39;:[float(self.omega)],
+                      &#39;z.T&#39;:[self.charge]}
+        except:
+            df_hkf = {&#39;a1.a&#39;:[float(&#34;NaN&#34;)],
+                      &#39;a2.b&#39;:[float(&#34;NaN&#34;)],
+                      &#39;a3.c&#39;:[float(&#34;NaN&#34;)],
+                      &#39;a4.d&#39;:[float(&#34;NaN&#34;)],
+                      &#39;c1.e&#39;:[float(&#34;NaN&#34;)],
+                      &#39;c2.f&#39;:[float(&#34;NaN&#34;)],
+                      &#39;omega.lambda&#39;:[float(&#34;NaN&#34;)],
+                      &#39;z.T&#39;:[self.charge]}
+
+        df_prop.update(df_hkf)
+        
+        df = pd.DataFrame(df_prop)
+        
         return df
 
     def __estimate(self):
@@ -2404,8 +1640,6 @@ package (see <a href="https://chnosz.net/manual/thermo.html">https://chnosz.net/
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
 <li><code><a title="AqOrg.AqOrg.Joback" href="#AqOrg.AqOrg.Joback">Joback</a></code></li>
-<li><code><a title="AqOrg.AqOrg.find_HKF" href="#AqOrg.AqOrg.find_HKF">find_HKF</a></code></li>
-<li><code><a title="AqOrg.AqOrg.find_HKF_test" href="#AqOrg.AqOrg.find_HKF_test">find_HKF_test</a></code></li>
 <li><code><a title="AqOrg.AqOrg.find_sigfigs" href="#AqOrg.AqOrg.find_sigfigs">find_sigfigs</a></code></li>
 </ul>
 </li>
