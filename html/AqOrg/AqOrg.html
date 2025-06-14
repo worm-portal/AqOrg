@@ -30,6 +30,7 @@
 from rdkit import Chem
 from rdkit.Chem import rdDepictor, Draw
 from rdkit.Chem.Draw import rdMolDraw2D
+from rdkit.Chem.rdMolDescriptors import CalcMolFormula
 import pandas as pd
 import math
 import sigfig
@@ -50,11 +51,6 @@ def find_sigfigs(x):
     ----------
     x : str
         A string denoting a number. This can include scientific notation.
-    
-    Parameters
-    ----------
-    int
-        The number of significant digits.
     
     Examples
     --------
@@ -112,15 +108,20 @@ class Estimate():
     
     Parameters
     ----------
-    name : str
+    name : str, optional
         Name of the aqueous organic molecule that will have its thermodynamic
         properties estimated.
+
+    smiles : str, optional
+        A SMILES string representing the molecule.
                        
     show : bool, default True
         Show a diagram of the molecule?
     
     group_data : str, optional
-        Name of a CSV containing custom group contribution data.
+        Path of a CSV containing custom group contribution data. If `state=&#34;aq&#34;`
+        then the CSV should contain hydration properties. If `state=&#34;gas&#34;` then
+        the CSV should contain ideal gas properties.
     
     test : bool, default False
         Perform a simple group matching test instead of estimating properties?
@@ -128,6 +129,9 @@ class Estimate():
     state : str, default &#34;aq&#34;
         Can be &#34;aq&#34; or &#34;gas&#34;. Estimate the properties of an aqueous molecule or
         an ideal gas?
+
+    ig_method : str, default &#34;Joback&#34;
+        Method used to estimate ideal gas properties.
 
     save : bool, default False
         Save molecular structure figures as PNG and SVG?
@@ -196,15 +200,17 @@ class Estimate():
     
     &#34;&#34;&#34;
     
-    def __init__(self, name, show=True, group_data=None,
-                       test=False, state=&#39;aq&#39;, save=False, hide_traceback=True,
-                       **kwargs):
+    def __init__(self, name=None, smiles=None, show=True, group_data=None,
+                       test=False, state=&#39;aq&#39;, ig_method=&#34;Joback&#34;,
+                       save=False, hide_traceback=True, **kwargs):
                        # E_units=&#34;J&#34; # not implemented... tricky because groups
                                      # are in both kJ and J units.
 
         self.err_handler = Error_Handler(clean=hide_traceback)
         
         self.name = name
+        self.smiles = smiles
+        self.state = state
         
         # valid kwargs
         self.Gh = None
@@ -233,30 +239,16 @@ class Estimate():
         for key, value in kwargs.items():
             self.__setattr__(key, value)
         
-        # load group contribution data
-        if group_data == None:
-            if state == &#34;aq&#34;:
-                group_data = pkg_resources.resource_stream(__name__, &#34;data/group_contribution_data.csv&#34;)
-            elif state == &#34;gas&#34;:
-                group_data=pkg_resources.resource_stream(__name__, &#39;data/joback_groups.csv&#39;)
-            else:
-                self.err_handler.raise_exception(&#34;State is unrecognized. Must be either &#39;aq&#39; or &#39;gas&#39;.&#34;)
-        self.__load_group_data(group_data)
-        
-        # look up compound on PubChem
-        self.pcp_compound = pcp.get_compounds(self.name, &#34;name&#34;)
-        if len(self.pcp_compound) == 0:
-            self.err_handler.raise_exception(&#34;Could not find &#39;&#34; + self.name + &#34;&#39; in PubChem&#39;s online database.&#34;)
-        self.smiles = self.pcp_compound[0].canonical_smiles
-        self.formula = self.pcp_compound[0].molecular_formula
-        self.formula_dict = parse_formula(self.formula)
+        self.group_data = group_data
+        self.load_group_data()
+        self.get_mol_smiles_formula_formula_dict()
         
         if &#34;-&#34; in self.formula_dict.keys() or &#34;+&#34; in self.formula_dict.keys():
             self.err_handler.raise_exception(self.name + &#34; cannot be estimated because it has a net charge.&#34;)
 
         if show:
-            self.__display_molecule(save=save)
-
+            self.display_molecule(save=save)
+            
         if test:
             print(self.__test_group_match())            
         else:
@@ -272,12 +264,42 @@ class Estimate():
             self.charge = 0 # !
             
             if state == &#39;aq&#39;:
-                self.OBIGT = self.__estimate()
+                self.OBIGT = self.__estimate_hydration()
             elif state == &#39;gas&#39;:
-                self.__estimate_joback()
+                if ig_method == &#34;Joback&#34;:
+                    self.__estimate_joback()
+                else:
+                    self.__estimate_ig()
+            else:
+                self.err_handler.raise_exception(&#34;State must be &#39;aq&#39; or &#39;gas&#39;.&#34;)
 
-    def __load_group_data(self, db_filename):
-        self.group_data = pd.read_csv(db_filename, dtype=str)
+    def get_mol_smiles_formula_formula_dict(self):
+        if not isinstance(self.smiles, str):
+            # look up compound on PubChem
+            self.pcp_compound = pcp.get_compounds(self.name, &#34;name&#34;)
+            if len(self.pcp_compound) == 0:
+                self.err_handler.raise_exception(&#34;Could not find &#39;&#34; + self.name + &#34;&#39; in PubChem&#39;s online database.&#34;)
+            self.smiles = self.pcp_compound[0].canonical_smiles
+            self.formula = self.pcp_compound[0].molecular_formula
+            self.mol = Chem.MolFromSmiles(self.smiles)
+        else:
+            self.mol = Chem.MolFromSmiles(self.smiles)
+            self.formula = CalcMolFormula(self.mol)
+            
+        self.formula_dict = parse_formula(self.formula)
+    
+    def load_group_data(self):
+        # load group contribution data
+        if self.group_data == None:
+            if self.state == &#34;aq&#34;:
+                self.group_data = pkg_resources.resource_stream(__name__, &#34;data/group_contribution_data.csv&#34;)
+            elif self.state == &#34;gas&#34;:
+                if self.ig_method == &#34;Joback&#34;:
+                    self.group_data = pkg_resources.resource_stream(__name__, &#39;data/joback_groups.csv&#39;)
+            else:
+                self.err_handler.raise_exception(&#34;State is unrecognized. Must be either &#39;aq&#39; or &#39;gas&#39;.&#34;)
+        
+        self.group_data = pd.read_csv(self.group_data, dtype=str)
         self.group_data[&#39;elem&#39;] = self.group_data[&#39;elem&#39;].fillna(&#39;&#39;)
         self.pattern_dict = pd.Series(self.group_data[&#34;elem&#34;].values,
                                       index=self.group_data[&#34;smarts&#34;]).to_dict()
@@ -286,7 +308,7 @@ class Estimate():
         
     def __set_groups(self):
         
-        self.group_matches = pd.DataFrame(self.__match_groups(), index=[self.name])
+        self.group_matches = pd.DataFrame(self.match_groups(), index=[self.name])
 
         # remove columns with no matches
         self.group_matches = self.group_matches.loc[:, (self.group_matches.sum(axis=0) != 0)]
@@ -313,13 +335,26 @@ class Estimate():
             
         return sum(entropies)*unit_conv
 
-    
-    def __dict_to_formula(self, formula_dict):
-        
+    @staticmethod
+    def dict_to_formula(formula_dict):
         &#34;&#34;&#34;
         Convert a formula dictionary into a formula string.
         Example:
-        ```dict_to_formula(parse_formula(&#34;CO3-2&#34;))```
+        ```dict_to_formula({&#34;C&#34;:1, &#34;H&#34;:1, &#34;O&#34;:3, &#34;-&#34;:1})```
+        will output &#34;HCO3-&#34;
+
+        Parameters
+        ----------
+        formula_dict : dict
+            Dictionary of elements and charge (as keys) and their quantities
+            (as values). Meant to be able to reverse the dictionary output of
+            chemparse.parse_formula back into a formula string.
+            For example, {&#34;C&#34;:1, &#34;H&#34;:1, &#34;O&#34;:3, &#34;-&#34;:1} representing HCO3-
+            
+        Returns
+        ----------
+        str
+            A chemical formula. E.g., &#34;HCO3-&#34;
         &#34;&#34;&#34;
         
         formula_string = &#34;&#34;
@@ -335,7 +370,12 @@ class Estimate():
         return formula_string
 
     
-    def __match_groups(self, show=False, save=False):
+    def match_groups(self):
+        &#34;&#34;&#34;
+        Match SMARTS strings to a molecule and get a dictionary of group matches.
+        This function is meant to be used internally by `Estimate`.
+        &#34;&#34;&#34;
+        
         patterns = self.pattern_dict.keys()
         mol = Chem.MolFromSmiles(self.smiles)
 
@@ -369,10 +409,9 @@ class Estimate():
                 total_formula_dict.pop(key, None)
         
         # retrieve individual charges that contribute to net charge
-        atomic_info = self.pcp_compound[0].record[&#34;atoms&#34;]
+        all_charges = [a.GetFormalCharge() for a in self.mol.GetAtoms()]
         chargedict = {}
-        if &#34;charge&#34; in atomic_info.keys():
-            all_charges = [chargedict.get(&#34;value&#34;, 0) for chargedict in atomic_info[&#34;charge&#34;]]
+        if any(x != 0 for x in all_charges):
             pos_charge = sum([charge for charge in all_charges if charge &gt; 0])
             neg_charge = abs(sum([charge for charge in all_charges if charge &lt; 0]))
             if pos_charge &gt; 0:
@@ -383,7 +422,7 @@ class Estimate():
             chargedict = {}
 
         # perform the comparison
-        test_dict = parse_formula(self.pcp_compound[0].molecular_formula)
+        test_dict = parse_formula(self.formula)
         test_dict.update(chargedict)
         if total_formula_dict != test_dict:
             mssg = &#34;The formula of &#34; + self.name + \
@@ -391,7 +430,7 @@ class Estimate():
                 &#34;matched groups. This could be because the database &#34; + \
                 &#34;is missing representative groups.\nFormula of &#34; + \
                 self.name + &#34;:\n&#34;
-            pcp_dict = parse_formula(self.pcp_compound[0].molecular_formula)
+            pcp_dict = parse_formula(self.formula)
             pcp_dict.update(chargedict)
             mssg = mssg + str(pcp_dict) + &#34;\nTotal formula of group matches:\n&#34; + \
                 str(total_formula_dict)
@@ -400,12 +439,16 @@ class Estimate():
             self.err_handler.raise_exception(mssg)
         
         # add molecular formula to match dictionary
-        match_dict[&#34;formula&#34;] = self.__dict_to_formula(total_formula_dict)
+        match_dict[&#34;formula&#34;] = self.dict_to_formula(total_formula_dict)
         
         return match_dict
 
-    
-    def __display_molecule(self, show=True, save=False):
+
+    def display_molecule(self, show=True, save=False):
+        &#34;&#34;&#34;
+        Display a molecule in a Jupyter notebook or save it as an SVG and PNG.
+        This function is meant to be used internally by `Estimate`.
+        &#34;&#34;&#34;
         mol_smiles = Chem.MolFromSmiles(self.smiles)
         
         mc = Chem.Mol(mol_smiles.ToBinary())
@@ -429,14 +472,71 @@ class Estimate():
         if save:
             os.makedirs(&#34;mol_svg&#34;, exist_ok=True)
             os.makedirs(&#34;mol_png&#34;, exist_ok=True)
-            #Draw.MolToFile( mol, &#34;mol_svg/&#34;+self.name+&#34;.svg&#34; )
+            Draw.MolToFile(mol_smiles, &#34;mol_svg/&#34;+self.name+&#34;.svg&#34; )
             Draw.MolToFile(mol_smiles, &#34;mol_png/&#34;+self.name+&#34;.png&#34;)
 
 
     def __test_group_match(self):
-        match_dict = self.__match_groups()
+        match_dict = self.match_groups()
         return {key:value for key,value in zip(match_dict.keys(), match_dict.values()) if value !=0}
+        
 
+    def __est_ig(self):
+        props = [&#34;Gig&#34;, &#34;Hig&#34;, &#34;Cpig&#34;]
+        
+        for prop in props:
+            err_str = prop + &#34;_err&#34;
+
+            # if property is already defined, skip estimating it
+            if prop in dir(self):
+                if not self.__getattribute__(prop) is None:
+                    continue
+            
+            mol_prop = 0
+            error_groups = []
+            mol_err = 999
+            prop_errs = []
+            n_dec = 999
+
+            for group in self.groups:
+
+                try:
+                    contains_group = self.group_matches.loc[self.name, group][0] != 0
+                except:
+                    contains_group = self.group_matches.loc[self.name, group] != 0
+
+                # if this molecule contains this group...
+                if contains_group:
+                    try:
+                        # add number of groups multiplied by its contribution
+                        mol_prop += self.group_matches.loc[self.name, group] * float(self.group_data.loc[group, prop])
+                    except:
+                        error_groups.append(group)
+                    
+            if len(error_groups) == 0:
+    
+                # add Y0
+                mol_prop += float(self.group_data.loc[&#34;Yo&#34;, prop])
+    
+                # propagate error of summed groups: sqrt(a**2 + b**2 + ...)
+                mol_err = round(math.sqrt(sum([float(err)**2 for err in prop_errs])), n_dec)
+    
+                # # format output as string (preserves trailing zeros)
+                # mol_prop = format(mol_prop, &#39;.&#39;+str(n_dec)+&#39;f&#39;)
+                # mol_err = format(mol_err, &#39;.&#39;+str(n_dec)+&#39;f&#39;)
+
+                self.__setattr__(prop, mol_prop)
+                self.__setattr__(err_str, mol_err)
+
+        if len(error_groups) &gt; 0:
+            msg = self.name + &#34; encountered errors with group(s): &#34; +\
+                str(error_groups) + &#34;. Are these groups assigned &#34;+\
+                &#34;ideal gas properties in the data file?&#34;
+            self.err_handler.raise_exception(msg)
+                    
+        # calculate Sig
+        self.Sig = ((self.Gig - self.Hig)/-298.15)*1000 + self.Selements
+        
     
     def __est_joback(self):
         
@@ -466,10 +566,11 @@ class Estimate():
                         
                 if len(error_groups) == 0:
                     self.__setattr__(prop, mol_prop+joback_props[prop])
-                else:
-                    self.err_handler.raise_exception(&#34;&#34; + self.name + &#34; encountered errors with group(s): &#34;
-                        &#34;&#34;+str(error_groups) + &#34;. Are these groups assigned &#34;
-                        &#34;ideal gas properties in the Joback data file?&#34;)
+
+        if len(error_groups) &gt; 0:
+            self.err_handler.raise_exception(&#34;&#34; + self.name + &#34; encountered errors with group(s): &#34;
+                &#34;&#34;+str(error_groups) + &#34;. Are these groups assigned &#34;
+                &#34;ideal gas properties in the Joback data file?&#34;)
             
         # calculate Cpig
         T=298.15
@@ -480,10 +581,8 @@ class Estimate():
         self.Sig = ((self.Gig - self.Hig)/-298.15)*1000 + self.Selements
     
     
-    def __est_calcs(self):
+    def __est_hydration(self, props=[&#34;Gh&#34;, &#34;Hh&#34;, &#34;Sh&#34;, &#34;Cph&#34;, &#34;V&#34;]):
 
-        props = [&#34;Gh&#34;, &#34;Hh&#34;, &#34;Sh&#34;, &#34;Cph&#34;, &#34;V&#34;]
-        
         for prop in props:
             if self.__getattribute__(prop) == None:
                 err_str = prop + &#34;_err&#34;
@@ -543,24 +642,26 @@ class Estimate():
                         try:
                             # add number of groups multiplied by its contribution
                             mol_prop += self.group_matches.loc[self.name, group] * float(self.group_data.loc[group, prop])
-
+    
                             # round property to smallest number of decimal places
-                            if &#34;.&#34; in self.group_data.loc[group, prop]:
-                                this_split = self.group_data.loc[group, prop].split(&#34;.&#34;)
-                                n_dec_group = len(this_split[len(this_split)-1])
-                            else:
-                                n_dec_group = 0
-
-                            if n_dec_group &lt; n_dec:
-                                n_dec = n_dec_group
-
-                            # handle group std errors
-                            try:
-                                float(self.group_data.loc[group, err_str]) # assert that this group&#39;s error is numeric
-                                prop_errs.append(self.group_data.loc[group, err_str]) # append error
-                            except:
-                                # if group&#39;s error is non-numeric, pass
-                                pass
+    
+                            if not math.isnan(float(self.group_data.loc[group, prop])):
+                                if &#34;.&#34; in self.group_data.loc[group, prop]:
+                                    this_split = self.group_data.loc[group, prop].split(&#34;.&#34;)
+                                    n_dec_group = len(this_split[len(this_split)-1])
+                                else:
+                                    n_dec_group = 0
+    
+                                if n_dec_group &lt; n_dec:
+                                    n_dec = n_dec_group
+        
+                                # handle group std errors
+                                try:
+                                    float(self.group_data.loc[group, err_str]) # assert that this group&#39;s error is numeric
+                                    prop_errs.append(self.group_data.loc[group, err_str]) # append error
+                                except:
+                                    # if group&#39;s error is non-numeric, pass
+                                    pass
 
                         except:
                             error_groups.append(group)
@@ -586,7 +687,6 @@ class Estimate():
                         &#34;hydration properties in the data file?&#34;
                     self.err_handler.raise_exception(msg)
         
-        ig_gas_error = False
         if self.Gig != None and self.Hig != None and self.Sig != None and self.Cpig != None:
             # no ideal gas estimation needed.
             # TODO: Modify if statement to allow calculating remainder if
@@ -595,24 +695,27 @@ class Estimate():
         else:
             # Joback estimation of the Gibbs free energy of formation of the
             # ideal gas (Joule-based).
-            try:
-                J_estimate = Joback(self.name)
-                
-                if self.Gig == None:
-                    self.Gig = J_estimate[&#34;Gig&#34;]
-                if self.Hig == None:
-                    self.Hig = J_estimate[&#34;Hig&#34;]
-                if self.Sig == None:
-                    self.Sig = ((float(self.Gig) - float(self.Hig))/-298.15)*1000 + self.Selements
-                if self.Cpig == None:
-                    self.Cpig = J_estimate[&#34;Cpig&#34;]
-            except:
-                ig_gas_error = True
-
-        if ig_gas_error:
-            self.err_handler.raise_exception(&#34;The properties of aqueous &#34;+self.name+&#34; could not be &#34;
-                &#34;estimated because its ideal gas properties could not be &#34;
-                &#34;estimated with the Joback method.&#34;)
+            # try:
+            J_estimate = Joback(self.name, smiles=self.smiles)
+            
+            if self.Gig == None:
+                self.Gig = J_estimate[&#34;Gig&#34;]
+            if self.Hig == None:
+                self.Hig = J_estimate[&#34;Hig&#34;]
+            if self.Sig == None:
+                self.Sig = ((float(self.Gig) - float(self.Hig))/-298.15)*1000 + self.Selements
+            if self.Cpig == None:
+                self.Cpig = J_estimate[&#34;Cpig&#34;]
+            # except:
+            #     if isinstance(self.name, str):
+            #         report_name = self.name
+            #     elif isinstance(self.smiles, str):
+            #         report_name = self.smiles
+            #     else:
+            #         report_name = &#34;ERROR&#34;
+            #     self.err_handler.raise_exception(&#34;The properties of aqueous &#39;&#34;+report_name+&#34;&#39; could not be &#34;
+            #         &#34;estimated because its ideal gas properties could not be &#34;
+            #         &#34;estimated with the Joback method.&#34;)
                 
         # estimate the Gibbs free energy of formation of the aqueous molecule by summing
         # its ideal gas and hydration properties.
@@ -641,7 +744,7 @@ class Estimate():
             if self.Cpaq == None:
                 self.Cpaq = self.Cpig + float(self.Cph)
         except:
-            self.Cpaq = float(&#34;NaN&#34;) 
+            self.Cpaq = float(&#34;NaN&#34;)
 
         # calculate HKF parameters
         try:
@@ -711,16 +814,21 @@ class Estimate():
         
         return df
 
-    def __estimate(self):
+    def __estimate_hydration(self):
         self.__set_groups()
-        self.__est_calcs()
+        self.__est_hydration()
         return self.__convert_to_OBIGT()
 
     def __estimate_joback(self):
         self.__set_groups()
         self.__est_joback()
 
-def Joback(name):
+    def __estimate_ig(self):
+        self.__set_groups()
+        self.__est_ig()
+
+
+def Joback(name, smiles=None, group_data=None):
     
     &#34;&#34;&#34;
     Estimate standard state ideal gas properties of a molecule using the Joback
@@ -731,6 +839,12 @@ def Joback(name):
     ----------
     name : str
         Name of the molecule for which to estimate ideal gas properties.
+
+    smiles : str, optional
+        A SMILES string representing the molecule.
+
+    group_data : str, optional
+        Path of a CSV containing custom Joback group property data.
         
     Returns
     ----------
@@ -743,9 +857,11 @@ def Joback(name):
         - Sig : Ideal gas entropy, J/mol/K.
         - Cpig : Ideal gas isobaric heat capacity, J/mol/K.
     &#34;&#34;&#34;
+    if group_data is None:
+        group_data = pkg_resources.resource_stream(__name__, &#39;data/joback_groups.csv&#39;)
     
-    ig_est = Estimate(name, state=&#39;gas&#39;, show=False,
-                      group_data=pkg_resources.resource_stream(__name__, &#39;data/joback_groups.csv&#39;), index_col=&#34;groups&#34;)
+    ig_est = Estimate(name, smiles=smiles, state=&#39;gas&#39;, ig_method=&#34;Joback&#34;, show=False,
+                      group_data=group_data, index_col=&#34;groups&#34;)
     
     return {&#39;Gig&#39;:ig_est.Gig, &#39;Hig&#39;:ig_est.Hig,
             &#39;Sig&#39;:ig_est.Sig, &#39;Cpig&#39;:ig_est.Cpig}</code></pre>
@@ -759,7 +875,7 @@ def Joback(name):
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="AqOrg.AqOrg.Joback"><code class="name flex">
-<span>def <span class="ident">Joback</span></span>(<span>name)</span>
+<span>def <span class="ident">Joback</span></span>(<span>name, smiles=None, group_data=None)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Estimate standard state ideal gas properties of a molecule using the Joback
@@ -769,6 +885,10 @@ from Group-Contributions", Chem. Eng. Commun., 57, 233–243, 1987.)</p>
 <dl>
 <dt><strong><code>name</code></strong> :&ensp;<code>str</code></dt>
 <dd>Name of the molecule for which to estimate ideal gas properties.</dd>
+<dt><strong><code>smiles</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>A SMILES string representing the molecule.</dd>
+<dt><strong><code>group_data</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>Path of a CSV containing custom Joback group property data.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
@@ -788,7 +908,7 @@ with the Joback method:</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def Joback(name):
+<pre><code class="python">def Joback(name, smiles=None, group_data=None):
     
     &#34;&#34;&#34;
     Estimate standard state ideal gas properties of a molecule using the Joback
@@ -799,6 +919,12 @@ with the Joback method:</p>
     ----------
     name : str
         Name of the molecule for which to estimate ideal gas properties.
+
+    smiles : str, optional
+        A SMILES string representing the molecule.
+
+    group_data : str, optional
+        Path of a CSV containing custom Joback group property data.
         
     Returns
     ----------
@@ -811,9 +937,11 @@ with the Joback method:</p>
         - Sig : Ideal gas entropy, J/mol/K.
         - Cpig : Ideal gas isobaric heat capacity, J/mol/K.
     &#34;&#34;&#34;
+    if group_data is None:
+        group_data = pkg_resources.resource_stream(__name__, &#39;data/joback_groups.csv&#39;)
     
-    ig_est = Estimate(name, state=&#39;gas&#39;, show=False,
-                      group_data=pkg_resources.resource_stream(__name__, &#39;data/joback_groups.csv&#39;), index_col=&#34;groups&#34;)
+    ig_est = Estimate(name, smiles=smiles, state=&#39;gas&#39;, ig_method=&#34;Joback&#34;, show=False,
+                      group_data=group_data, index_col=&#34;groups&#34;)
     
     return {&#39;Gig&#39;:ig_est.Gig, &#39;Hig&#39;:ig_est.Hig,
             &#39;Sig&#39;:ig_est.Sig, &#39;Cpig&#39;:ig_est.Cpig}</code></pre>
@@ -829,11 +957,6 @@ eight digits long.</p>
 <dl>
 <dt><strong><code>x</code></strong> :&ensp;<code>str</code></dt>
 <dd>A string denoting a number. This can include scientific notation.</dd>
-</dl>
-<h2 id="parameters_1">Parameters</h2>
-<dl>
-<dt><strong><code>int</code></strong></dt>
-<dd>The number of significant digits.</dd>
 </dl>
 <h2 id="examples">Examples</h2>
 <pre><code class="language-python-repl">&gt;&gt;&gt; find_sigfigs(&quot;5.220&quot;)
@@ -865,11 +988,6 @@ eight digits long.</p>
     ----------
     x : str
         A string denoting a number. This can include scientific notation.
-    
-    Parameters
-    ----------
-    int
-        The number of significant digits.
     
     Examples
     --------
@@ -927,24 +1045,30 @@ eight digits long.</p>
 <dl>
 <dt id="AqOrg.AqOrg.Estimate"><code class="flex name class">
 <span>class <span class="ident">Estimate</span></span>
-<span>(</span><span>name, show=True, group_data=None, test=False, state='aq', save=False, hide_traceback=True, **kwargs)</span>
+<span>(</span><span>name=None, smiles=None, show=True, group_data=None, test=False, state='aq', ig_method='Joback', save=False, hide_traceback=True, **kwargs)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Estimate thermodynamic properties of an aqueous organic molecule.</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
-<dt><strong><code>name</code></strong> :&ensp;<code>str</code></dt>
+<dt><strong><code>name</code></strong> :&ensp;<code>str</code>, optional</dt>
 <dd>Name of the aqueous organic molecule that will have its thermodynamic
 properties estimated.</dd>
+<dt><strong><code>smiles</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>A SMILES string representing the molecule.</dd>
 <dt><strong><code>show</code></strong> :&ensp;<code>bool</code>, default <code>True</code></dt>
 <dd>Show a diagram of the molecule?</dd>
 <dt><strong><code>group_data</code></strong> :&ensp;<code>str</code>, optional</dt>
-<dd>Name of a CSV containing custom group contribution data.</dd>
+<dd>Path of a CSV containing custom group contribution data. If <code>state="aq"</code>
+then the CSV should contain hydration properties. If <code>state="gas"</code> then
+the CSV should contain ideal gas properties.</dd>
 <dt><strong><code>test</code></strong> :&ensp;<code>bool</code>, default <code>False</code></dt>
 <dd>Perform a simple group matching test instead of estimating properties?</dd>
 <dt><strong><code>state</code></strong> :&ensp;<code>str</code>, default <code>"aq"</code></dt>
 <dd>Can be "aq" or "gas". Estimate the properties of an aqueous molecule or
 an ideal gas?</dd>
+<dt><strong><code>ig_method</code></strong> :&ensp;<code>str</code>, default <code>"Joback"</code></dt>
+<dd>Method used to estimate ideal gas properties.</dd>
 <dt><strong><code>save</code></strong> :&ensp;<code>bool</code>, default <code>False</code></dt>
 <dd>Save molecular structure figures as PNG and SVG?</dd>
 <dt><strong><code>**kwargs</code></strong> :&ensp;<code>numeric</code> or <code>str</code>, optional</dt>
@@ -1014,15 +1138,20 @@ the point.</dd>
     
     Parameters
     ----------
-    name : str
+    name : str, optional
         Name of the aqueous organic molecule that will have its thermodynamic
         properties estimated.
+
+    smiles : str, optional
+        A SMILES string representing the molecule.
                        
     show : bool, default True
         Show a diagram of the molecule?
     
     group_data : str, optional
-        Name of a CSV containing custom group contribution data.
+        Path of a CSV containing custom group contribution data. If `state=&#34;aq&#34;`
+        then the CSV should contain hydration properties. If `state=&#34;gas&#34;` then
+        the CSV should contain ideal gas properties.
     
     test : bool, default False
         Perform a simple group matching test instead of estimating properties?
@@ -1030,6 +1159,9 @@ the point.</dd>
     state : str, default &#34;aq&#34;
         Can be &#34;aq&#34; or &#34;gas&#34;. Estimate the properties of an aqueous molecule or
         an ideal gas?
+
+    ig_method : str, default &#34;Joback&#34;
+        Method used to estimate ideal gas properties.
 
     save : bool, default False
         Save molecular structure figures as PNG and SVG?
@@ -1098,15 +1230,17 @@ the point.</dd>
     
     &#34;&#34;&#34;
     
-    def __init__(self, name, show=True, group_data=None,
-                       test=False, state=&#39;aq&#39;, save=False, hide_traceback=True,
-                       **kwargs):
+    def __init__(self, name=None, smiles=None, show=True, group_data=None,
+                       test=False, state=&#39;aq&#39;, ig_method=&#34;Joback&#34;,
+                       save=False, hide_traceback=True, **kwargs):
                        # E_units=&#34;J&#34; # not implemented... tricky because groups
                                      # are in both kJ and J units.
 
         self.err_handler = Error_Handler(clean=hide_traceback)
         
         self.name = name
+        self.smiles = smiles
+        self.state = state
         
         # valid kwargs
         self.Gh = None
@@ -1135,30 +1269,16 @@ the point.</dd>
         for key, value in kwargs.items():
             self.__setattr__(key, value)
         
-        # load group contribution data
-        if group_data == None:
-            if state == &#34;aq&#34;:
-                group_data = pkg_resources.resource_stream(__name__, &#34;data/group_contribution_data.csv&#34;)
-            elif state == &#34;gas&#34;:
-                group_data=pkg_resources.resource_stream(__name__, &#39;data/joback_groups.csv&#39;)
-            else:
-                self.err_handler.raise_exception(&#34;State is unrecognized. Must be either &#39;aq&#39; or &#39;gas&#39;.&#34;)
-        self.__load_group_data(group_data)
-        
-        # look up compound on PubChem
-        self.pcp_compound = pcp.get_compounds(self.name, &#34;name&#34;)
-        if len(self.pcp_compound) == 0:
-            self.err_handler.raise_exception(&#34;Could not find &#39;&#34; + self.name + &#34;&#39; in PubChem&#39;s online database.&#34;)
-        self.smiles = self.pcp_compound[0].canonical_smiles
-        self.formula = self.pcp_compound[0].molecular_formula
-        self.formula_dict = parse_formula(self.formula)
+        self.group_data = group_data
+        self.load_group_data()
+        self.get_mol_smiles_formula_formula_dict()
         
         if &#34;-&#34; in self.formula_dict.keys() or &#34;+&#34; in self.formula_dict.keys():
             self.err_handler.raise_exception(self.name + &#34; cannot be estimated because it has a net charge.&#34;)
 
         if show:
-            self.__display_molecule(save=save)
-
+            self.display_molecule(save=save)
+            
         if test:
             print(self.__test_group_match())            
         else:
@@ -1174,12 +1294,42 @@ the point.</dd>
             self.charge = 0 # !
             
             if state == &#39;aq&#39;:
-                self.OBIGT = self.__estimate()
+                self.OBIGT = self.__estimate_hydration()
             elif state == &#39;gas&#39;:
-                self.__estimate_joback()
+                if ig_method == &#34;Joback&#34;:
+                    self.__estimate_joback()
+                else:
+                    self.__estimate_ig()
+            else:
+                self.err_handler.raise_exception(&#34;State must be &#39;aq&#39; or &#39;gas&#39;.&#34;)
 
-    def __load_group_data(self, db_filename):
-        self.group_data = pd.read_csv(db_filename, dtype=str)
+    def get_mol_smiles_formula_formula_dict(self):
+        if not isinstance(self.smiles, str):
+            # look up compound on PubChem
+            self.pcp_compound = pcp.get_compounds(self.name, &#34;name&#34;)
+            if len(self.pcp_compound) == 0:
+                self.err_handler.raise_exception(&#34;Could not find &#39;&#34; + self.name + &#34;&#39; in PubChem&#39;s online database.&#34;)
+            self.smiles = self.pcp_compound[0].canonical_smiles
+            self.formula = self.pcp_compound[0].molecular_formula
+            self.mol = Chem.MolFromSmiles(self.smiles)
+        else:
+            self.mol = Chem.MolFromSmiles(self.smiles)
+            self.formula = CalcMolFormula(self.mol)
+            
+        self.formula_dict = parse_formula(self.formula)
+    
+    def load_group_data(self):
+        # load group contribution data
+        if self.group_data == None:
+            if self.state == &#34;aq&#34;:
+                self.group_data = pkg_resources.resource_stream(__name__, &#34;data/group_contribution_data.csv&#34;)
+            elif self.state == &#34;gas&#34;:
+                if self.ig_method == &#34;Joback&#34;:
+                    self.group_data = pkg_resources.resource_stream(__name__, &#39;data/joback_groups.csv&#39;)
+            else:
+                self.err_handler.raise_exception(&#34;State is unrecognized. Must be either &#39;aq&#39; or &#39;gas&#39;.&#34;)
+        
+        self.group_data = pd.read_csv(self.group_data, dtype=str)
         self.group_data[&#39;elem&#39;] = self.group_data[&#39;elem&#39;].fillna(&#39;&#39;)
         self.pattern_dict = pd.Series(self.group_data[&#34;elem&#34;].values,
                                       index=self.group_data[&#34;smarts&#34;]).to_dict()
@@ -1188,7 +1338,7 @@ the point.</dd>
         
     def __set_groups(self):
         
-        self.group_matches = pd.DataFrame(self.__match_groups(), index=[self.name])
+        self.group_matches = pd.DataFrame(self.match_groups(), index=[self.name])
 
         # remove columns with no matches
         self.group_matches = self.group_matches.loc[:, (self.group_matches.sum(axis=0) != 0)]
@@ -1215,13 +1365,26 @@ the point.</dd>
             
         return sum(entropies)*unit_conv
 
-    
-    def __dict_to_formula(self, formula_dict):
-        
+    @staticmethod
+    def dict_to_formula(formula_dict):
         &#34;&#34;&#34;
         Convert a formula dictionary into a formula string.
         Example:
-        ```dict_to_formula(parse_formula(&#34;CO3-2&#34;))```
+        ```dict_to_formula({&#34;C&#34;:1, &#34;H&#34;:1, &#34;O&#34;:3, &#34;-&#34;:1})```
+        will output &#34;HCO3-&#34;
+
+        Parameters
+        ----------
+        formula_dict : dict
+            Dictionary of elements and charge (as keys) and their quantities
+            (as values). Meant to be able to reverse the dictionary output of
+            chemparse.parse_formula back into a formula string.
+            For example, {&#34;C&#34;:1, &#34;H&#34;:1, &#34;O&#34;:3, &#34;-&#34;:1} representing HCO3-
+            
+        Returns
+        ----------
+        str
+            A chemical formula. E.g., &#34;HCO3-&#34;
         &#34;&#34;&#34;
         
         formula_string = &#34;&#34;
@@ -1237,7 +1400,12 @@ the point.</dd>
         return formula_string
 
     
-    def __match_groups(self, show=False, save=False):
+    def match_groups(self):
+        &#34;&#34;&#34;
+        Match SMARTS strings to a molecule and get a dictionary of group matches.
+        This function is meant to be used internally by `Estimate`.
+        &#34;&#34;&#34;
+        
         patterns = self.pattern_dict.keys()
         mol = Chem.MolFromSmiles(self.smiles)
 
@@ -1271,10 +1439,9 @@ the point.</dd>
                 total_formula_dict.pop(key, None)
         
         # retrieve individual charges that contribute to net charge
-        atomic_info = self.pcp_compound[0].record[&#34;atoms&#34;]
+        all_charges = [a.GetFormalCharge() for a in self.mol.GetAtoms()]
         chargedict = {}
-        if &#34;charge&#34; in atomic_info.keys():
-            all_charges = [chargedict.get(&#34;value&#34;, 0) for chargedict in atomic_info[&#34;charge&#34;]]
+        if any(x != 0 for x in all_charges):
             pos_charge = sum([charge for charge in all_charges if charge &gt; 0])
             neg_charge = abs(sum([charge for charge in all_charges if charge &lt; 0]))
             if pos_charge &gt; 0:
@@ -1285,7 +1452,7 @@ the point.</dd>
             chargedict = {}
 
         # perform the comparison
-        test_dict = parse_formula(self.pcp_compound[0].molecular_formula)
+        test_dict = parse_formula(self.formula)
         test_dict.update(chargedict)
         if total_formula_dict != test_dict:
             mssg = &#34;The formula of &#34; + self.name + \
@@ -1293,7 +1460,7 @@ the point.</dd>
                 &#34;matched groups. This could be because the database &#34; + \
                 &#34;is missing representative groups.\nFormula of &#34; + \
                 self.name + &#34;:\n&#34;
-            pcp_dict = parse_formula(self.pcp_compound[0].molecular_formula)
+            pcp_dict = parse_formula(self.formula)
             pcp_dict.update(chargedict)
             mssg = mssg + str(pcp_dict) + &#34;\nTotal formula of group matches:\n&#34; + \
                 str(total_formula_dict)
@@ -1302,12 +1469,16 @@ the point.</dd>
             self.err_handler.raise_exception(mssg)
         
         # add molecular formula to match dictionary
-        match_dict[&#34;formula&#34;] = self.__dict_to_formula(total_formula_dict)
+        match_dict[&#34;formula&#34;] = self.dict_to_formula(total_formula_dict)
         
         return match_dict
 
-    
-    def __display_molecule(self, show=True, save=False):
+
+    def display_molecule(self, show=True, save=False):
+        &#34;&#34;&#34;
+        Display a molecule in a Jupyter notebook or save it as an SVG and PNG.
+        This function is meant to be used internally by `Estimate`.
+        &#34;&#34;&#34;
         mol_smiles = Chem.MolFromSmiles(self.smiles)
         
         mc = Chem.Mol(mol_smiles.ToBinary())
@@ -1331,14 +1502,71 @@ the point.</dd>
         if save:
             os.makedirs(&#34;mol_svg&#34;, exist_ok=True)
             os.makedirs(&#34;mol_png&#34;, exist_ok=True)
-            #Draw.MolToFile( mol, &#34;mol_svg/&#34;+self.name+&#34;.svg&#34; )
+            Draw.MolToFile(mol_smiles, &#34;mol_svg/&#34;+self.name+&#34;.svg&#34; )
             Draw.MolToFile(mol_smiles, &#34;mol_png/&#34;+self.name+&#34;.png&#34;)
 
 
     def __test_group_match(self):
-        match_dict = self.__match_groups()
+        match_dict = self.match_groups()
         return {key:value for key,value in zip(match_dict.keys(), match_dict.values()) if value !=0}
+        
 
+    def __est_ig(self):
+        props = [&#34;Gig&#34;, &#34;Hig&#34;, &#34;Cpig&#34;]
+        
+        for prop in props:
+            err_str = prop + &#34;_err&#34;
+
+            # if property is already defined, skip estimating it
+            if prop in dir(self):
+                if not self.__getattribute__(prop) is None:
+                    continue
+            
+            mol_prop = 0
+            error_groups = []
+            mol_err = 999
+            prop_errs = []
+            n_dec = 999
+
+            for group in self.groups:
+
+                try:
+                    contains_group = self.group_matches.loc[self.name, group][0] != 0
+                except:
+                    contains_group = self.group_matches.loc[self.name, group] != 0
+
+                # if this molecule contains this group...
+                if contains_group:
+                    try:
+                        # add number of groups multiplied by its contribution
+                        mol_prop += self.group_matches.loc[self.name, group] * float(self.group_data.loc[group, prop])
+                    except:
+                        error_groups.append(group)
+                    
+            if len(error_groups) == 0:
+    
+                # add Y0
+                mol_prop += float(self.group_data.loc[&#34;Yo&#34;, prop])
+    
+                # propagate error of summed groups: sqrt(a**2 + b**2 + ...)
+                mol_err = round(math.sqrt(sum([float(err)**2 for err in prop_errs])), n_dec)
+    
+                # # format output as string (preserves trailing zeros)
+                # mol_prop = format(mol_prop, &#39;.&#39;+str(n_dec)+&#39;f&#39;)
+                # mol_err = format(mol_err, &#39;.&#39;+str(n_dec)+&#39;f&#39;)
+
+                self.__setattr__(prop, mol_prop)
+                self.__setattr__(err_str, mol_err)
+
+        if len(error_groups) &gt; 0:
+            msg = self.name + &#34; encountered errors with group(s): &#34; +\
+                str(error_groups) + &#34;. Are these groups assigned &#34;+\
+                &#34;ideal gas properties in the data file?&#34;
+            self.err_handler.raise_exception(msg)
+                    
+        # calculate Sig
+        self.Sig = ((self.Gig - self.Hig)/-298.15)*1000 + self.Selements
+        
     
     def __est_joback(self):
         
@@ -1368,10 +1596,11 @@ the point.</dd>
                         
                 if len(error_groups) == 0:
                     self.__setattr__(prop, mol_prop+joback_props[prop])
-                else:
-                    self.err_handler.raise_exception(&#34;&#34; + self.name + &#34; encountered errors with group(s): &#34;
-                        &#34;&#34;+str(error_groups) + &#34;. Are these groups assigned &#34;
-                        &#34;ideal gas properties in the Joback data file?&#34;)
+
+        if len(error_groups) &gt; 0:
+            self.err_handler.raise_exception(&#34;&#34; + self.name + &#34; encountered errors with group(s): &#34;
+                &#34;&#34;+str(error_groups) + &#34;. Are these groups assigned &#34;
+                &#34;ideal gas properties in the Joback data file?&#34;)
             
         # calculate Cpig
         T=298.15
@@ -1382,10 +1611,8 @@ the point.</dd>
         self.Sig = ((self.Gig - self.Hig)/-298.15)*1000 + self.Selements
     
     
-    def __est_calcs(self):
+    def __est_hydration(self, props=[&#34;Gh&#34;, &#34;Hh&#34;, &#34;Sh&#34;, &#34;Cph&#34;, &#34;V&#34;]):
 
-        props = [&#34;Gh&#34;, &#34;Hh&#34;, &#34;Sh&#34;, &#34;Cph&#34;, &#34;V&#34;]
-        
         for prop in props:
             if self.__getattribute__(prop) == None:
                 err_str = prop + &#34;_err&#34;
@@ -1445,24 +1672,26 @@ the point.</dd>
                         try:
                             # add number of groups multiplied by its contribution
                             mol_prop += self.group_matches.loc[self.name, group] * float(self.group_data.loc[group, prop])
-
+    
                             # round property to smallest number of decimal places
-                            if &#34;.&#34; in self.group_data.loc[group, prop]:
-                                this_split = self.group_data.loc[group, prop].split(&#34;.&#34;)
-                                n_dec_group = len(this_split[len(this_split)-1])
-                            else:
-                                n_dec_group = 0
-
-                            if n_dec_group &lt; n_dec:
-                                n_dec = n_dec_group
-
-                            # handle group std errors
-                            try:
-                                float(self.group_data.loc[group, err_str]) # assert that this group&#39;s error is numeric
-                                prop_errs.append(self.group_data.loc[group, err_str]) # append error
-                            except:
-                                # if group&#39;s error is non-numeric, pass
-                                pass
+    
+                            if not math.isnan(float(self.group_data.loc[group, prop])):
+                                if &#34;.&#34; in self.group_data.loc[group, prop]:
+                                    this_split = self.group_data.loc[group, prop].split(&#34;.&#34;)
+                                    n_dec_group = len(this_split[len(this_split)-1])
+                                else:
+                                    n_dec_group = 0
+    
+                                if n_dec_group &lt; n_dec:
+                                    n_dec = n_dec_group
+        
+                                # handle group std errors
+                                try:
+                                    float(self.group_data.loc[group, err_str]) # assert that this group&#39;s error is numeric
+                                    prop_errs.append(self.group_data.loc[group, err_str]) # append error
+                                except:
+                                    # if group&#39;s error is non-numeric, pass
+                                    pass
 
                         except:
                             error_groups.append(group)
@@ -1488,7 +1717,6 @@ the point.</dd>
                         &#34;hydration properties in the data file?&#34;
                     self.err_handler.raise_exception(msg)
         
-        ig_gas_error = False
         if self.Gig != None and self.Hig != None and self.Sig != None and self.Cpig != None:
             # no ideal gas estimation needed.
             # TODO: Modify if statement to allow calculating remainder if
@@ -1497,24 +1725,27 @@ the point.</dd>
         else:
             # Joback estimation of the Gibbs free energy of formation of the
             # ideal gas (Joule-based).
-            try:
-                J_estimate = Joback(self.name)
-                
-                if self.Gig == None:
-                    self.Gig = J_estimate[&#34;Gig&#34;]
-                if self.Hig == None:
-                    self.Hig = J_estimate[&#34;Hig&#34;]
-                if self.Sig == None:
-                    self.Sig = ((float(self.Gig) - float(self.Hig))/-298.15)*1000 + self.Selements
-                if self.Cpig == None:
-                    self.Cpig = J_estimate[&#34;Cpig&#34;]
-            except:
-                ig_gas_error = True
-
-        if ig_gas_error:
-            self.err_handler.raise_exception(&#34;The properties of aqueous &#34;+self.name+&#34; could not be &#34;
-                &#34;estimated because its ideal gas properties could not be &#34;
-                &#34;estimated with the Joback method.&#34;)
+            # try:
+            J_estimate = Joback(self.name, smiles=self.smiles)
+            
+            if self.Gig == None:
+                self.Gig = J_estimate[&#34;Gig&#34;]
+            if self.Hig == None:
+                self.Hig = J_estimate[&#34;Hig&#34;]
+            if self.Sig == None:
+                self.Sig = ((float(self.Gig) - float(self.Hig))/-298.15)*1000 + self.Selements
+            if self.Cpig == None:
+                self.Cpig = J_estimate[&#34;Cpig&#34;]
+            # except:
+            #     if isinstance(self.name, str):
+            #         report_name = self.name
+            #     elif isinstance(self.smiles, str):
+            #         report_name = self.smiles
+            #     else:
+            #         report_name = &#34;ERROR&#34;
+            #     self.err_handler.raise_exception(&#34;The properties of aqueous &#39;&#34;+report_name+&#34;&#39; could not be &#34;
+            #         &#34;estimated because its ideal gas properties could not be &#34;
+            #         &#34;estimated with the Joback method.&#34;)
                 
         # estimate the Gibbs free energy of formation of the aqueous molecule by summing
         # its ideal gas and hydration properties.
@@ -1543,7 +1774,7 @@ the point.</dd>
             if self.Cpaq == None:
                 self.Cpaq = self.Cpig + float(self.Cph)
         except:
-            self.Cpaq = float(&#34;NaN&#34;) 
+            self.Cpaq = float(&#34;NaN&#34;)
 
         # calculate HKF parameters
         try:
@@ -1613,15 +1844,263 @@ the point.</dd>
         
         return df
 
-    def __estimate(self):
+    def __estimate_hydration(self):
         self.__set_groups()
-        self.__est_calcs()
+        self.__est_hydration()
         return self.__convert_to_OBIGT()
 
     def __estimate_joback(self):
         self.__set_groups()
-        self.__est_joback()</code></pre>
+        self.__est_joback()
+
+    def __estimate_ig(self):
+        self.__set_groups()
+        self.__est_ig()</code></pre>
 </details>
+<h3>Static methods</h3>
+<dl>
+<dt id="AqOrg.AqOrg.Estimate.dict_to_formula"><code class="name flex">
+<span>def <span class="ident">dict_to_formula</span></span>(<span>formula_dict)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Convert a formula dictionary into a formula string.
+Example:
+<code>dict_to_formula({"C":1, "H":1, "O":3, "-":1})</code>
+will output "HCO3-"</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>formula_dict</code></strong> :&ensp;<code>dict</code></dt>
+<dd>Dictionary of elements and charge (as keys) and their quantities
+(as values). Meant to be able to reverse the dictionary output of
+chemparse.parse_formula back into a formula string.
+For example, {"C":1, "H":1, "O":3, "-":1} representing HCO3-</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>str</code></dt>
+<dd>A chemical formula. E.g., "HCO3-"</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def dict_to_formula(formula_dict):
+    &#34;&#34;&#34;
+    Convert a formula dictionary into a formula string.
+    Example:
+    ```dict_to_formula({&#34;C&#34;:1, &#34;H&#34;:1, &#34;O&#34;:3, &#34;-&#34;:1})```
+    will output &#34;HCO3-&#34;
+
+    Parameters
+    ----------
+    formula_dict : dict
+        Dictionary of elements and charge (as keys) and their quantities
+        (as values). Meant to be able to reverse the dictionary output of
+        chemparse.parse_formula back into a formula string.
+        For example, {&#34;C&#34;:1, &#34;H&#34;:1, &#34;O&#34;:3, &#34;-&#34;:1} representing HCO3-
+        
+    Returns
+    ----------
+    str
+        A chemical formula. E.g., &#34;HCO3-&#34;
+    &#34;&#34;&#34;
+    
+    formula_string = &#34;&#34;
+    for key in formula_dict.keys():
+        if abs(formula_dict[key]) == 1:
+            v = &#34;&#34;
+        else:
+            v = formula_dict[key]
+            if (v).is_integer():
+                v = int(v)
+
+        formula_string = formula_string + str(key) + str(v)
+    return formula_string</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="AqOrg.AqOrg.Estimate.display_molecule"><code class="name flex">
+<span>def <span class="ident">display_molecule</span></span>(<span>self, show=True, save=False)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Display a molecule in a Jupyter notebook or save it as an SVG and PNG.
+This function is meant to be used internally by <code><a title="AqOrg.AqOrg.Estimate" href="#AqOrg.AqOrg.Estimate">Estimate</a></code>.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def display_molecule(self, show=True, save=False):
+    &#34;&#34;&#34;
+    Display a molecule in a Jupyter notebook or save it as an SVG and PNG.
+    This function is meant to be used internally by `Estimate`.
+    &#34;&#34;&#34;
+    mol_smiles = Chem.MolFromSmiles(self.smiles)
+    
+    mc = Chem.Mol(mol_smiles.ToBinary())
+    molSize=(450, 150)
+    
+    if not mc.GetNumConformers():
+        #Compute 2D coordinates
+        rdDepictor.Compute2DCoords(mc)
+    # init the drawer with the size
+    drawer = rdMolDraw2D.MolDraw2DSVG(molSize[0],molSize[1])
+    #draw the molcule
+    drawer.DrawMolecule(mc)
+    drawer.FinishDrawing()
+    # get the SVG string
+    svg = drawer.GetDrawingText()
+
+    if show:
+        # fix the svg string and display it
+        display(SVG(svg.replace(&#39;svg:&#39;,&#39;&#39;)))
+
+    if save:
+        os.makedirs(&#34;mol_svg&#34;, exist_ok=True)
+        os.makedirs(&#34;mol_png&#34;, exist_ok=True)
+        Draw.MolToFile(mol_smiles, &#34;mol_svg/&#34;+self.name+&#34;.svg&#34; )
+        Draw.MolToFile(mol_smiles, &#34;mol_png/&#34;+self.name+&#34;.png&#34;)</code></pre>
+</details>
+</dd>
+<dt id="AqOrg.AqOrg.Estimate.get_mol_smiles_formula_formula_dict"><code class="name flex">
+<span>def <span class="ident">get_mol_smiles_formula_formula_dict</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_mol_smiles_formula_formula_dict(self):
+    if not isinstance(self.smiles, str):
+        # look up compound on PubChem
+        self.pcp_compound = pcp.get_compounds(self.name, &#34;name&#34;)
+        if len(self.pcp_compound) == 0:
+            self.err_handler.raise_exception(&#34;Could not find &#39;&#34; + self.name + &#34;&#39; in PubChem&#39;s online database.&#34;)
+        self.smiles = self.pcp_compound[0].canonical_smiles
+        self.formula = self.pcp_compound[0].molecular_formula
+        self.mol = Chem.MolFromSmiles(self.smiles)
+    else:
+        self.mol = Chem.MolFromSmiles(self.smiles)
+        self.formula = CalcMolFormula(self.mol)
+        
+    self.formula_dict = parse_formula(self.formula)</code></pre>
+</details>
+</dd>
+<dt id="AqOrg.AqOrg.Estimate.load_group_data"><code class="name flex">
+<span>def <span class="ident">load_group_data</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def load_group_data(self):
+    # load group contribution data
+    if self.group_data == None:
+        if self.state == &#34;aq&#34;:
+            self.group_data = pkg_resources.resource_stream(__name__, &#34;data/group_contribution_data.csv&#34;)
+        elif self.state == &#34;gas&#34;:
+            if self.ig_method == &#34;Joback&#34;:
+                self.group_data = pkg_resources.resource_stream(__name__, &#39;data/joback_groups.csv&#39;)
+        else:
+            self.err_handler.raise_exception(&#34;State is unrecognized. Must be either &#39;aq&#39; or &#39;gas&#39;.&#34;)
+    
+    self.group_data = pd.read_csv(self.group_data, dtype=str)
+    self.group_data[&#39;elem&#39;] = self.group_data[&#39;elem&#39;].fillna(&#39;&#39;)
+    self.pattern_dict = pd.Series(self.group_data[&#34;elem&#34;].values,
+                                  index=self.group_data[&#34;smarts&#34;]).to_dict()
+    self.group_data = self.group_data.set_index(&#34;smarts&#34;)</code></pre>
+</details>
+</dd>
+<dt id="AqOrg.AqOrg.Estimate.match_groups"><code class="name flex">
+<span>def <span class="ident">match_groups</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Match SMARTS strings to a molecule and get a dictionary of group matches.
+This function is meant to be used internally by <code><a title="AqOrg.AqOrg.Estimate" href="#AqOrg.AqOrg.Estimate">Estimate</a></code>.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def match_groups(self):
+    &#34;&#34;&#34;
+    Match SMARTS strings to a molecule and get a dictionary of group matches.
+    This function is meant to be used internally by `Estimate`.
+    &#34;&#34;&#34;
+    
+    patterns = self.pattern_dict.keys()
+    mol = Chem.MolFromSmiles(self.smiles)
+
+    match_dict = dict(zip(patterns, [0]*len(patterns))) # initialize match_dict
+    for pattern in patterns:
+        if pattern != &#34;Yo&#34;: # never match material point
+            try:
+                match_dict[pattern] = len(mol.GetSubstructMatches(Chem.MolFromSmarts(pattern)))
+            except:
+                print(&#34;Warning in match_groups(): problem&#34;,
+                      &#34;identifying SMARTS group&#34;, pattern,
+                      &#34;. Skipping this group.&#34;)
+
+    ### check that total formula of groups matches that of the molecule
+    
+    # create a dictionary of element matches
+    total_formula_dict = {}
+    for match in match_dict.keys():
+        this_match = parse_formula(self.pattern_dict[match])
+        for element in this_match.keys():
+            this_match[element] *= match_dict[match]
+            if element in total_formula_dict:
+                total_formula_dict[element] += this_match[element]
+            else:
+                total_formula_dict[str(element)] = 0
+                total_formula_dict[element] += this_match[element]
+    
+    # remove keys of elements with a value of 0 (e.g. &#34;H&#34;:0.0)
+    for key in list(total_formula_dict.keys()):
+        if total_formula_dict[key] == 0.0:
+            total_formula_dict.pop(key, None)
+    
+    # retrieve individual charges that contribute to net charge
+    all_charges = [a.GetFormalCharge() for a in self.mol.GetAtoms()]
+    chargedict = {}
+    if any(x != 0 for x in all_charges):
+        pos_charge = sum([charge for charge in all_charges if charge &gt; 0])
+        neg_charge = abs(sum([charge for charge in all_charges if charge &lt; 0]))
+        if pos_charge &gt; 0:
+            chargedict[&#39;+&#39;]=float(pos_charge)
+        if neg_charge &gt; 0:
+            chargedict[&#39;-&#39;]=float(neg_charge)
+    else:
+        chargedict = {}
+
+    # perform the comparison
+    test_dict = parse_formula(self.formula)
+    test_dict.update(chargedict)
+    if total_formula_dict != test_dict:
+        mssg = &#34;The formula of &#34; + self.name + \
+            &#34; does not equal the the elemental composition of the &#34; + \
+            &#34;matched groups. This could be because the database &#34; + \
+            &#34;is missing representative groups.\nFormula of &#34; + \
+            self.name + &#34;:\n&#34;
+        pcp_dict = parse_formula(self.formula)
+        pcp_dict.update(chargedict)
+        mssg = mssg + str(pcp_dict) + &#34;\nTotal formula of group matches:\n&#34; + \
+            str(total_formula_dict)
+        mssg = mssg + &#34;\nIncomplete group matches:\n&#34; + \
+            str({k:v for k,v in zip(match_dict.keys(), match_dict.values()) if v!= 0})
+        self.err_handler.raise_exception(mssg)
+    
+    # add molecular formula to match dictionary
+    match_dict[&#34;formula&#34;] = self.dict_to_formula(total_formula_dict)
+    
+    return match_dict</code></pre>
+</details>
+</dd>
+</dl>
 </dd>
 </dl>
 </section>
@@ -1647,6 +2126,13 @@ the point.</dd>
 <ul>
 <li>
 <h4><code><a title="AqOrg.AqOrg.Estimate" href="#AqOrg.AqOrg.Estimate">Estimate</a></code></h4>
+<ul class="">
+<li><code><a title="AqOrg.AqOrg.Estimate.dict_to_formula" href="#AqOrg.AqOrg.Estimate.dict_to_formula">dict_to_formula</a></code></li>
+<li><code><a title="AqOrg.AqOrg.Estimate.display_molecule" href="#AqOrg.AqOrg.Estimate.display_molecule">display_molecule</a></code></li>
+<li><code><a title="AqOrg.AqOrg.Estimate.get_mol_smiles_formula_formula_dict" href="#AqOrg.AqOrg.Estimate.get_mol_smiles_formula_formula_dict">get_mol_smiles_formula_formula_dict</a></code></li>
+<li><code><a title="AqOrg.AqOrg.Estimate.load_group_data" href="#AqOrg.AqOrg.Estimate.load_group_data">load_group_data</a></code></li>
+<li><code><a title="AqOrg.AqOrg.Estimate.match_groups" href="#AqOrg.AqOrg.Estimate.match_groups">match_groups</a></code></li>
+</ul>
 </li>
 </ul>
 </li>
