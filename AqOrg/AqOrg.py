@@ -9,9 +9,8 @@ import sigfig
 import pubchempy as pcp
 import os
 from chemparse import parse_formula
-import pkg_resources
 from datetime import datetime
-from WORMutils import Error_Handler, find_HKF
+from WORMutils import Error_Handler, find_HKF, import_package_file
 
 def find_sigfigs(x):
     
@@ -228,7 +227,10 @@ class Estimate():
             # Cox, J. D., Wagman, D. D., and Medvedev, V. A., CODATA Key Values
             # for Thermodynamics, Hemisphere Publishing Corp., New York, 1989.
             # Compiled into a CSV by Jeffrey Dick for CHNOSZ
-            element_data = pd.read_csv(pkg_resources.resource_stream(__name__, 'data/element.csv'), index_col="element")
+
+            with import_package_file(__name__, 'data/element.csv', as_file=True) as path:
+                element_data = pd.read_csv(path, index_col="element")
+            
             self.element_data = element_data.loc[element_data['source'] == "CWM89"]
             
             self.Selements = self.__entropy()
@@ -262,16 +264,17 @@ class Estimate():
     
     def load_group_data(self):
         # load group contribution data
-        if self.group_data == None:
+        if not isinstance(self.group_data, pd.DataFrame):
             if self.state == "aq":
-                self.group_data = pkg_resources.resource_stream(__name__, "data/group_contribution_data.csv")
+                with import_package_file(__name__, 'data/group_contribution_data.csv', as_file=True) as path:
+                    self.group_data = pd.read_csv(path, dtype=str)
             elif self.state == "gas":
                 if self.ig_method == "Joback":
-                    self.group_data = pkg_resources.resource_stream(__name__, 'data/joback_groups.csv')
+                    with import_package_file(__name__, 'data/joback_groups.csv', as_file=True) as path:
+                        self.group_data = pd.read_csv(path, dtype=str)
             else:
                 self.err_handler.raise_exception("State is unrecognized. Must be either 'aq' or 'gas'.")
         
-        self.group_data = pd.read_csv(self.group_data, dtype=str)
         self.group_data['elem'] = self.group_data['elem'].fillna('')
         self.pattern_dict = pd.Series(self.group_data["elem"].values,
                                       index=self.group_data["smarts"]).to_dict()
@@ -830,7 +833,8 @@ def Joback(name, smiles=None, group_data=None):
         - Cpig : Ideal gas isobaric heat capacity, J/mol/K.
     """
     if group_data is None:
-        group_data = pkg_resources.resource_stream(__name__, 'data/joback_groups.csv')
+        with import_package_file(__name__, 'data/joback_groups.csv', as_file=True) as path:
+            group_data = pd.read_csv(path, dtype=str)
     
     ig_est = Estimate(name, smiles=smiles, state='gas', ig_method="Joback", show=False,
                       group_data=group_data, index_col="groups")
