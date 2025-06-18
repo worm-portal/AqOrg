@@ -21,11 +21,11 @@ authors:
     family-names: Shock
     given-names: Everett
     orcid: "https://orcid.org/0000-0002-4283-0163"
-cff-version: "0.0.3"
+cff-version: "0.4.0"
 license: MIT
 message: "If you use this software, please cite it using these metadata."
 repository-code: "https://github.com/worm-portal/AqOrg"
 title: "AqOrg : Python package for estimating thermodynamic properties of aqueous organic molecules"
-version: "0.3.1"
-date-released: 2025-05-29
+version: "0.4.0"
+date-released: 2025-06-18
 ...
