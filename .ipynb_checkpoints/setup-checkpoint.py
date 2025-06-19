@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="AqOrg",
-    version="0.2.1",
+    version="0.4.0",
     author="Grayson Boyer",
     author_email="gmboyer@asu.edu",
     description="Estimate thermodynamic properties of aqueous organic compounds",
@@ -18,7 +18,7 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    python_requires='>=3.6',
+    python_requires='>=3.10',
     install_requires=['chemparse',
                       'pubchempy',
                       'sigfig',

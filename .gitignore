@@ -1,0 +1,25 @@
+# Ignore everything:
+*
+
+# Include only these folders:
+!AqOrg/
+!AqOrg/*
+!AqOrg/*/
+!html/
+!html/AqOrg/
+!html/AqOrg/*
+!html/AqOrg/*/
+!README.md
+!CITATION.cff
+!LICENSE.txt
+!setup.py
+!.gitignore
+
+# Ignore pycache
+AqOrg/__pycache__/*
+AqOrg/__pycache__/
+AqOrg/__pycache__
+.ipynb_checkpoints
+.ipynb_checkpoints/
+.ipynb_checkpoints/*
+__pycache__/
