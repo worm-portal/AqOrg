@@ -6,7 +6,12 @@ from rdkit.Chem.rdMolDescriptors import CalcMolFormula
 import pandas as pd
 import math
 import sigfig
-import pubchempy as pcp
+
+import warnings
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore", SyntaxWarning)
+    import pubchempy as pcp
+    
 import os
 from chemparse import parse_formula
 from datetime import datetime
@@ -182,6 +187,7 @@ class Estimate():
         self.name = name
         self.smiles = smiles
         self.state = state
+        self.ig_method = ig_method
         
         # valid kwargs
         self.Gh = None
