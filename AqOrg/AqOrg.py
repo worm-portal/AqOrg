@@ -278,9 +278,12 @@ class Estimate():
                 if self.ig_method == "Joback":
                     with import_package_file(__name__, 'data/joback_groups.csv', as_file=True) as path:
                         self.group_data = pd.read_csv(path, dtype=str)
+                else:
+                    # load custom gas group
+                    self.group_data = pd.read_csv(self.group_data, dtype=str)
             else:
                 self.err_handler.raise_exception("State is unrecognized. Must be either 'aq' or 'gas'.")
-        
+
         self.group_data['elem'] = self.group_data['elem'].fillna('')
         self.pattern_dict = pd.Series(self.group_data["elem"].values,
                                       index=self.group_data["smarts"]).to_dict()
