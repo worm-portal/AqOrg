@@ -7,10 +7,10 @@ import pandas as pd
 import math
 import sigfig
 
-# import warnings
-# with warnings.catch_warnings():
-#     warnings.simplefilter("ignore", SyntaxWarning)
-#     import pubchempy as pcp
+import warnings
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore", SyntaxWarning)
+    import pubchempy as pcp
     
 import os
 from chemparse import parse_formula
@@ -259,7 +259,7 @@ class Estimate():
             self.pcp_compound = pcp.get_compounds(self.name, "name")
             if len(self.pcp_compound) == 0:
                 self.err_handler.raise_exception("Could not find '" + self.name + "' in PubChem's online database.")
-            self.smiles = self.pcp_compound[0].canonical_smiles
+            self.smiles = self.pcp_compound[0].connectivity_smiles 
             self.formula = self.pcp_compound[0].molecular_formula
             self.mol = Chem.MolFromSmiles(self.smiles)
         else:
@@ -739,7 +739,8 @@ class Estimate():
                                     Gf=float(self.Gaq)*1000/4.184,
                                     Hf=float(self.Haq)*1000/4.184,
                                     Saq=float(self.Saq)/4.184,
-                                    Z=float(self.charge))
+                                    Z=float(self.charge),
+                                    organic=True)
 
             properties_to_convert = ["G", "H", "S", "Cp", "a1", "a2", "a3", "a4", "c1", "c2", "omega"]
             for k,v in zip(hkf_dict.keys(), hkf_dict.values()):
