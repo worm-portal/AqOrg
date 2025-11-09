@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
-<title>AqOrg.AqOrg API documentation</title>
+<title>aqorg.AqOrg API documentation</title>
 <meta name="description" content="">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
@@ -33,7 +33,7 @@ el.replaceWith(d);
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>AqOrg.AqOrg</code></h1>
+<h1 class="title">Module <code>aqorg.AqOrg</code></h1>
 </header>
 <section id="section-intro">
 </section>
@@ -44,7 +44,7 @@ el.replaceWith(d);
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="AqOrg.AqOrg.Joback"><code class="name flex">
+<dt id="aqorg.AqOrg.Joback"><code class="name flex">
 <span>def <span class="ident">Joback</span></span>(<span>name, smiles=None, group_data=None)</span>
 </code></dt>
 <dd>
@@ -118,7 +118,7 @@ with the Joback method:</p>
 </dd>
 </dl></div>
 </dd>
-<dt id="AqOrg.AqOrg.find_sigfigs"><code class="name flex">
+<dt id="aqorg.AqOrg.find_sigfigs"><code class="name flex">
 <span>def <span class="ident">find_sigfigs</span></span>(<span>x)</span>
 </code></dt>
 <dd>
@@ -214,7 +214,7 @@ eight digits long.</p>
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
-<dt id="AqOrg.AqOrg.Estimate"><code class="flex name class">
+<dt id="aqorg.AqOrg.Estimate"><code class="flex name class">
 <span>class <span class="ident">Estimate</span></span>
 <span>(</span><span>name=None,<br>smiles=None,<br>show=True,<br>group_data=None,<br>test=False,<br>state='aq',<br>ig_method='Joback',<br>save=False,<br>hide_traceback=True,<br>**kwargs)</span>
 </code></dt>
@@ -333,6 +333,7 @@ eight digits long.</p>
         self.name = name
         self.smiles = smiles
         self.state = state
+        self.ig_method = ig_method
         
         # valid kwargs
         self.Gh = None
@@ -404,7 +405,7 @@ eight digits long.</p>
             self.pcp_compound = pcp.get_compounds(self.name, &#34;name&#34;)
             if len(self.pcp_compound) == 0:
                 self.err_handler.raise_exception(&#34;Could not find &#39;&#34; + self.name + &#34;&#39; in PubChem&#39;s online database.&#34;)
-            self.smiles = self.pcp_compound[0].canonical_smiles
+            self.smiles = self.pcp_compound[0].connectivity_smiles 
             self.formula = self.pcp_compound[0].molecular_formula
             self.mol = Chem.MolFromSmiles(self.smiles)
         else:
@@ -423,9 +424,12 @@ eight digits long.</p>
                 if self.ig_method == &#34;Joback&#34;:
                     with import_package_file(__name__, &#39;data/joback_groups.csv&#39;, as_file=True) as path:
                         self.group_data = pd.read_csv(path, dtype=str)
+                else:
+                    # load custom gas group
+                    self.group_data = pd.read_csv(self.group_data, dtype=str)
             else:
                 self.err_handler.raise_exception(&#34;State is unrecognized. Must be either &#39;aq&#39; or &#39;gas&#39;.&#34;)
-        
+
         self.group_data[&#39;elem&#39;] = self.group_data[&#39;elem&#39;].fillna(&#39;&#39;)
         self.pattern_dict = pd.Series(self.group_data[&#34;elem&#34;].values,
                                       index=self.group_data[&#34;smarts&#34;]).to_dict()
@@ -881,7 +885,8 @@ eight digits long.</p>
                                     Gf=float(self.Gaq)*1000/4.184,
                                     Hf=float(self.Haq)*1000/4.184,
                                     Saq=float(self.Saq)/4.184,
-                                    Z=float(self.charge))
+                                    Z=float(self.charge),
+                                    organic=True)
 
             properties_to_convert = [&#34;G&#34;, &#34;H&#34;, &#34;S&#34;, &#34;Cp&#34;, &#34;a1&#34;, &#34;a2&#34;, &#34;a3&#34;, &#34;a4&#34;, &#34;c1&#34;, &#34;c2&#34;, &#34;omega&#34;]
             for k,v in zip(hkf_dict.keys(), hkf_dict.values()):
@@ -908,6 +913,7 @@ eight digits long.</p>
                    &#39;ref1&#39;:[&#39;AqOrg&#39;],
                    &#39;ref2&#39;:[&#39;GrpAdd&#39;],
                    &#39;date&#39;:[datetime.now().strftime(&#34;%d/%m/%Y %H:%M:%S&#34;)],
+                   &#39;model&#39;:[&#39;HKF&#39;],
                    &#39;E_units&#39;:[&#39;J&#39;],
                    &#39;G&#39;:[float(self.Gaq)*1000],
                    &#39;H&#39;:[float(self.Haq)*1000],
@@ -1034,7 +1040,7 @@ the point.</dd>
 </dl></div>
 <h3>Static methods</h3>
 <dl>
-<dt id="AqOrg.AqOrg.Estimate.dict_to_formula"><code class="name flex">
+<dt id="aqorg.AqOrg.Estimate.dict_to_formula"><code class="name flex">
 <span>def <span class="ident">dict_to_formula</span></span>(<span>formula_dict)</span>
 </code></dt>
 <dd>
@@ -1097,7 +1103,7 @@ For example, {"C":1, "H":1, "O":3, "-":1} representing HCO3-</dd>
 </dl>
 <h3>Methods</h3>
 <dl>
-<dt id="AqOrg.AqOrg.Estimate.display_molecule"><code class="name flex">
+<dt id="aqorg.AqOrg.Estimate.display_molecule"><code class="name flex">
 <span>def <span class="ident">display_molecule</span></span>(<span>self, show=True, save=False)</span>
 </code></dt>
 <dd>
@@ -1137,9 +1143,9 @@ For example, {"C":1, "H":1, "O":3, "-":1} representing HCO3-</dd>
         Draw.MolToFile(mol_smiles, &#34;mol_png/&#34;+self.name+&#34;.png&#34;)</code></pre>
 </details>
 <div class="desc"><p>Display a molecule in a Jupyter notebook or save it as an SVG and PNG.
-This function is meant to be used internally by <code><a title="AqOrg.AqOrg.Estimate" href="#AqOrg.AqOrg.Estimate">Estimate</a></code>.</p></div>
+This function is meant to be used internally by <code><a title="aqorg.AqOrg.Estimate" href="#aqorg.AqOrg.Estimate">Estimate</a></code>.</p></div>
 </dd>
-<dt id="AqOrg.AqOrg.Estimate.get_mol_smiles_formula_formula_dict"><code class="name flex">
+<dt id="aqorg.AqOrg.Estimate.get_mol_smiles_formula_formula_dict"><code class="name flex">
 <span>def <span class="ident">get_mol_smiles_formula_formula_dict</span></span>(<span>self)</span>
 </code></dt>
 <dd>
@@ -1153,7 +1159,7 @@ This function is meant to be used internally by <code><a title="AqOrg.AqOrg.Esti
         self.pcp_compound = pcp.get_compounds(self.name, &#34;name&#34;)
         if len(self.pcp_compound) == 0:
             self.err_handler.raise_exception(&#34;Could not find &#39;&#34; + self.name + &#34;&#39; in PubChem&#39;s online database.&#34;)
-        self.smiles = self.pcp_compound[0].canonical_smiles
+        self.smiles = self.pcp_compound[0].connectivity_smiles 
         self.formula = self.pcp_compound[0].molecular_formula
         self.mol = Chem.MolFromSmiles(self.smiles)
     else:
@@ -1164,7 +1170,7 @@ This function is meant to be used internally by <code><a title="AqOrg.AqOrg.Esti
 </details>
 <div class="desc"></div>
 </dd>
-<dt id="AqOrg.AqOrg.Estimate.load_group_data"><code class="name flex">
+<dt id="aqorg.AqOrg.Estimate.load_group_data"><code class="name flex">
 <span>def <span class="ident">load_group_data</span></span>(<span>self)</span>
 </code></dt>
 <dd>
@@ -1182,9 +1188,12 @@ This function is meant to be used internally by <code><a title="AqOrg.AqOrg.Esti
             if self.ig_method == &#34;Joback&#34;:
                 with import_package_file(__name__, &#39;data/joback_groups.csv&#39;, as_file=True) as path:
                     self.group_data = pd.read_csv(path, dtype=str)
+            else:
+                # load custom gas group
+                self.group_data = pd.read_csv(self.group_data, dtype=str)
         else:
             self.err_handler.raise_exception(&#34;State is unrecognized. Must be either &#39;aq&#39; or &#39;gas&#39;.&#34;)
-    
+
     self.group_data[&#39;elem&#39;] = self.group_data[&#39;elem&#39;].fillna(&#39;&#39;)
     self.pattern_dict = pd.Series(self.group_data[&#34;elem&#34;].values,
                                   index=self.group_data[&#34;smarts&#34;]).to_dict()
@@ -1192,7 +1201,7 @@ This function is meant to be used internally by <code><a title="AqOrg.AqOrg.Esti
 </details>
 <div class="desc"></div>
 </dd>
-<dt id="AqOrg.AqOrg.Estimate.match_groups"><code class="name flex">
+<dt id="aqorg.AqOrg.Estimate.match_groups"><code class="name flex">
 <span>def <span class="ident">match_groups</span></span>(<span>self)</span>
 </code></dt>
 <dd>
@@ -1274,7 +1283,7 @@ This function is meant to be used internally by <code><a title="AqOrg.AqOrg.Esti
     return match_dict</code></pre>
 </details>
 <div class="desc"><p>Match SMARTS strings to a molecule and get a dictionary of group matches.
-This function is meant to be used internally by <code><a title="AqOrg.AqOrg.Estimate" href="#AqOrg.AqOrg.Estimate">Estimate</a></code>.</p></div>
+This function is meant to be used internally by <code><a title="aqorg.AqOrg.Estimate" href="#aqorg.AqOrg.Estimate">Estimate</a></code>.</p></div>
 </dd>
 </dl>
 </dd>
@@ -1288,25 +1297,25 @@ This function is meant to be used internally by <code><a title="AqOrg.AqOrg.Esti
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="AqOrg" href="index.html">AqOrg</a></code></li>
+<li><code><a title="aqorg" href="index.html">aqorg</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="AqOrg.AqOrg.Joback" href="#AqOrg.AqOrg.Joback">Joback</a></code></li>
-<li><code><a title="AqOrg.AqOrg.find_sigfigs" href="#AqOrg.AqOrg.find_sigfigs">find_sigfigs</a></code></li>
+<li><code><a title="aqorg.AqOrg.Joback" href="#aqorg.AqOrg.Joback">Joback</a></code></li>
+<li><code><a title="aqorg.AqOrg.find_sigfigs" href="#aqorg.AqOrg.find_sigfigs">find_sigfigs</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
-<h4><code><a title="AqOrg.AqOrg.Estimate" href="#AqOrg.AqOrg.Estimate">Estimate</a></code></h4>
+<h4><code><a title="aqorg.AqOrg.Estimate" href="#aqorg.AqOrg.Estimate">Estimate</a></code></h4>
 <ul class="">
-<li><code><a title="AqOrg.AqOrg.Estimate.dict_to_formula" href="#AqOrg.AqOrg.Estimate.dict_to_formula">dict_to_formula</a></code></li>
-<li><code><a title="AqOrg.AqOrg.Estimate.display_molecule" href="#AqOrg.AqOrg.Estimate.display_molecule">display_molecule</a></code></li>
-<li><code><a title="AqOrg.AqOrg.Estimate.get_mol_smiles_formula_formula_dict" href="#AqOrg.AqOrg.Estimate.get_mol_smiles_formula_formula_dict">get_mol_smiles_formula_formula_dict</a></code></li>
-<li><code><a title="AqOrg.AqOrg.Estimate.load_group_data" href="#AqOrg.AqOrg.Estimate.load_group_data">load_group_data</a></code></li>
-<li><code><a title="AqOrg.AqOrg.Estimate.match_groups" href="#AqOrg.AqOrg.Estimate.match_groups">match_groups</a></code></li>
+<li><code><a title="aqorg.AqOrg.Estimate.dict_to_formula" href="#aqorg.AqOrg.Estimate.dict_to_formula">dict_to_formula</a></code></li>
+<li><code><a title="aqorg.AqOrg.Estimate.display_molecule" href="#aqorg.AqOrg.Estimate.display_molecule">display_molecule</a></code></li>
+<li><code><a title="aqorg.AqOrg.Estimate.get_mol_smiles_formula_formula_dict" href="#aqorg.AqOrg.Estimate.get_mol_smiles_formula_formula_dict">get_mol_smiles_formula_formula_dict</a></code></li>
+<li><code><a title="aqorg.AqOrg.Estimate.load_group_data" href="#aqorg.AqOrg.Estimate.load_group_data">load_group_data</a></code></li>
+<li><code><a title="aqorg.AqOrg.Estimate.match_groups" href="#aqorg.AqOrg.Estimate.match_groups">match_groups</a></code></li>
 </ul>
 </li>
 </ul>

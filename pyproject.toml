@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aqorg"
+version = "0.5.0"
+description = "Estimate thermodynamic properties of aqueous organic compounds"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "Grayson Boyer", email = "gmboyer@asu.edu"}
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "chemparse",
+    "pubchempy",
+    "sigfig",
+    "pandas",
+    "rdkit",
+    "pgradd",
+    "wormutils",
+]
+
+[project.urls]
+Homepage = "https://github.com/worm-portal/aqorg"
+
+[tool.setuptools]
+packages = ["aqorg"]
+zip-safe = false
+
+[tool.setuptools.package-data]
+"*" = ["data/*.csv"]

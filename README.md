@@ -8,7 +8,7 @@ This [Jupyter notebook demo](https://gitlab.com/worm1/worm-library/-/blob/master
 Install `AqOrg` with pip:
 
 ```
-$ pip install AqOrg
+$ pip install aqorg
 ```
 
 ## Usage

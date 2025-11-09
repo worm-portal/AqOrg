@@ -15,7 +15,7 @@ with warnings.catch_warnings():
 import os
 from chemparse import parse_formula
 from datetime import datetime
-from WORMutils import Error_Handler, find_HKF, import_package_file
+from wormutils import Error_Handler, find_HKF, import_package_file
 
 def find_sigfigs(x):
     
@@ -767,6 +767,7 @@ class Estimate():
                    'ref1':['AqOrg'],
                    'ref2':['GrpAdd'],
                    'date':[datetime.now().strftime("%d/%m/%Y %H:%M:%S")],
+                   'model':['HKF'],
                    'E_units':['J'],
                    'G':[float(self.Gaq)*1000],
                    'H':[float(self.Haq)*1000],
