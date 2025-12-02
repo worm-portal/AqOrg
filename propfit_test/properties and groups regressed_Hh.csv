@@ -1,0 +1,307 @@
+compound,actual,prediction,pred errs
+Propane,-22.926666666666662,-22.7,6.33
+n-Butane,-25.925,-26.4,6.33
+n-Pentane,-27.72,-30.1,6.34
+n-Hexane,-31.47,-33.8,6.34
+n-Heptane,-36.18666666666666,-37.49,6.34
+n-Octane,-41.443333333333335,-41.19,6.34
+n-Nonane,-47.515,-44.89,6.34
+2-Methylpropane,-24.243333333333336,-25.15,7.35
+"2,2-Dimethylpropane",-24.15,-25.21,9.07
+2-Methylbutane,-25.2,-28.84,7.35
+"2,3-Dimethylbutane",-33.73,-31.29,8.24
+2-Methylpentane,-33.0,-32.54,7.35
+"3,3-Dimethylpentane",-32.75,-32.6,9.07
+"2,2,4-Trimethylpentane",-35.040000000000006,-35.05,9.8
+Propene,-21.64,-21.17,6.49
+"1,3-Butadiene",-24.7,-23.34,6.65
+1-Butene,-24.88,-24.87,6.49
+2-Methyl-1-propene,-24.9,-24.62,7.56
+"2-Methyl-1,3-butadiene",-28.7,-26.78,7.7
+2-Methyl-2-butene,-28.5,-29.2,7.56
+1-Hexene,-32.2,-32.27,6.5
+1-Octene,-36.9,-39.66,6.5
+Propyne,-19.7,-16.25,6.56
+1-Butyne,-16.5,-19.95,6.56
+Benzene,-32.057272727272725,-32.35,5.62
+Methylbenzene,-36.60333333333333,-35.71,6.36
+"1,2-Dimethylbenzene",-38.38,-39.08,7.02
+"1,3-Dimethylbenzene",-39.52,-39.08,7.02
+"1,4-Dimethylbenzene",-38.435,-39.08,7.02
+Ethylbenzene,-40.316,-38.84,6.55
+"1,3,5-Trimethylbenzene",-43.54333333333333,-42.45,7.62
+"1,2,3-Trimethylbenzene",-41.76,-42.45,7.62
+"1,2,4-Trimethylbenzene",-42.34,-42.45,7.62
+cumene,-39.6,-39.6,7.81
+n-Propylbenzene,-43.58,-42.54,6.55
+n-Butylbenzene,-46.1,-46.24,6.55
+n-Pentylbenzene,-48.8,-49.94,6.55
+n-Hexylbenzene,-52.4,-53.64,6.55
+Cyclopropane,-23.26,-23.26,6.12
+Cyclopentane,-30.72,-29.76,5.54
+Cyclohexane,-33.04,-33.38,5.62
+Methylcyclohexane,-37.64,-36.18,6.65
+Cyclopentene,-25.7,-30.12,5.53
+"1,4-Cyclohexadiene",-36.25,-34.09,5.59
+Cyclohexene,-34.87,-33.73,5.61
+"1,3,5-Cycloheptatriene",-37.8,-38.05,5.65
+Methanol,-45.11999999999999,-48.06,6.47
+Ethanol,-52.58269230769231,-53.49,6.15
+n-Propanol,-57.52578947368421,-57.19,6.15
+n-Butanol,-61.45473684210527,-60.88,6.15
+1-Pentanol,-64.7,-64.58,6.15
+n-Hexanol,-67.50714285714287,-68.28,6.16
+n-Heptanol,-71.46000000000001,-71.98,6.16
+n-Octanol,-74.42999999999999,-75.68,6.16
+1-Nonanol,-77.31,-79.37,6.16
+2-Propanol,-58.52666666666666,-57.71,6.92
+2-Butanol,-62.75,-61.41,6.92
+2-Methyl-1-propanol,-60.33500000000001,-59.63,7.19
+2-Methyl-2-propanol,-64.152,-63.45,8.47
+"2,2-Dimethyl-1-propanol",-58.0,-59.69,8.94
+2-Methyl-1-butanol,-62.23,-63.33,7.19
+2-Methyl-2-butanol,-68.5175,-67.15,8.47
+2-Pentanol,-65.32,-65.11,6.92
+3-Methyl-1-butanol,-63.08,-63.33,7.19
+3-Pentanol,-66.39,-65.11,6.92
+"2,3-Dimethyl-2-butanol",-67.7,-69.59,9.25
+2-Ethyl-1-butanol,-69.3,-67.03,7.2
+2-Hexanol,-68.90666666666667,-68.81,6.92
+2-Methyl-1-pentanol,-68.1,-67.03,7.2
+3-Hexanol,-69.495,-68.81,6.92
+3-Methyl-3-pentanol,-66.19999999999999,-70.85,8.47
+4-Methyl-2-pentanol,-64.86666666666667,-67.56,7.86
+3-Heptanol,-73.7,-72.51,6.92
+2-Heptanol,-72.75999999999999,-72.51,6.92
+3-Ethyl-3-Pentanol,-73.1,-74.54,8.47
+4-Heptanol,-76.035,-72.51,6.92
+2-Ethyl-1-Hexanol,-77.1,-74.42,7.2
+2-Octanol,-80.6,-76.2,6.93
+3-Octanol,-77.0,-76.2,6.93
+2-Propen-1-ol,-50.89666666666667,-55.66,6.31
+4-Penten-1-ol,-62.2,-63.05,6.32
+Cyclopentanol,-68.15,-67.22,6.2
+Cyclohexanol,-70.60799999999999,-70.83,6.26
+Cycloheptanol,-75.89666666666666,-74.45,6.33
+Cyclohexanemethanol,-70.7,-70.66,6.48
+Cyclooctanol,-76.2,-78.06,6.39
+Acetone,-41.239285714285714,-40.8,6.55
+2-Butanone,-45.43571428571429,-44.5,6.55
+2-Pentanone,-48.03333333333333,-48.2,6.55
+3-Methyl-2-butanone,-45.34666666666666,-46.94,7.54
+3-Pentanone,-48.44,-48.2,6.55
+2-Hexanone,-52.83,-51.89,6.55
+2-Methyl-3-pentanone,-48.56,-50.64,7.54
+"3,3-Dimethyl-2-butanone",-48.5,-47.0,9.22
+3-Hexanone,-50.52,-51.89,6.55
+3-Methyl-2-pentanone,-50.09,-50.64,7.54
+4-Methyl-2-pentanone,-49.88333333333333,-50.64,7.54
+2-Heptanone,-56.29666666666666,-55.59,6.56
+4-Heptanone,-55.84,-55.59,6.56
+"2,4-Dimethyl-3-pentanone",-53.60333333333333,-53.09,8.41
+"2,6-Dimethyl-4-heptanone",-61.72,-60.48,8.41
+2-Nonanone,-62.74,-62.99,6.56
+Methoxymethane,-34.474999999999994,-32.23,7.24
+1-Methoxypropane,-38.0,-41.35,6.96
+2-Methoxypropane,-38.08,-41.88,7.65
+Diethyl ether,-45.44166666666666,-43.08,6.67
+1-Methoxy-2-methylpropane,-46.21,-43.8,7.9
+2-Ethoxypropane,-46.12,-47.31,7.38
+2-Methoxy-2-Methylpropane,-63.12142857142858,-47.62,9.07
+1-Methoxybutane,-47.13,-45.05,6.96
+2-Methoxybutane,-42.71,-45.58,7.65
+Isopropyl propyl ether,-52.15,-51.01,7.39
+"2,2'-Oxybispropane",-50.855,-51.53,8.03
+"1,1'-Oxybispropane",-49.123333333333335,-50.48,6.67
+1-Ethoxybutane,-47.81,-50.48,6.67
+2-Ethoxy-2-methylpropane,-51.09,-53.04,8.85
+2-Methoxy-2-methylbutane,-52.5,-51.32,9.08
+"1,2-Dimethoxyethane",-59.35200000000001,-56.31,7.54
+"1,2-Diethoxyethane",-72.13,-67.16,6.99
+Anesthenyl,-39.285,-39.29,7.88
+"1,1-Diethoxyethane",-60.145,-60.14,7.73
+Alpha-pinene,-41.4,-41.4,7.0
+Gamma-Terpinene,-39.4,-38.65,8.11
+Limonene,-39.85,-41.35,8.45
+Methyl Formate,-31.866666666666664,-31.79,6.99
+Ethyl Formate,-37.47333333333333,-37.22,6.69
+Propyl Formate,-40.51,-40.91,6.7
+Isobutyl Formate,-43.0,-43.36,7.66
+Isopentyl Formate,-47.7,-47.06,7.66
+Pentyl Formate,-48.1,-48.31,6.7
+Methyl Acetate,-40.85285714285714,-39.32,7.04
+Ethyl Acetate,-45.35142857142858,-44.75,6.75
+Isopropyl Acetate,-46.790000000000006,-48.97,7.46
+Propyl Acetate,-47.974,-48.45,6.75
+Isobutyl Acetate,-52.635,-50.89,7.71
+Butyl Acetate,-52.835,-52.14,6.75
+tert-Butyl Acetate,-45.892,-54.71,8.91
+sec-Butyl Acetate,-51.895,-52.67,7.46
+n-Pentyl Acetate,-54.1,-55.84,6.75
+Isopentyl Acetate,-51.29999999999999,-54.59,7.71
+n-Hexyl Acetate,-60.8,-59.54,6.76
+Methyl Propionate,-43.275000000000006,-43.02,7.04
+Ethyl Propionate,-49.52,-48.45,6.75
+Propyl Propionate,-51.18,-52.14,6.75
+Isobutyl Propionate,-54.7,-54.59,7.71
+Butyl Propionate,-57.8,-55.84,6.75
+Methyl Butyrate,-47.36666666666667,-46.72,7.04
+Ethyl Butyrate,-53.355,-52.14,6.75
+Propyl Butyrate,-54.9,-55.84,6.75
+Butyl Butyrate,-63.5,-59.54,6.76
+Methyl Isobutyrate,-45.58,-45.46,7.97
+Ethyl Isobutyrate,-51.28,-50.89,7.71
+Isobutyl Isobutyrate,-55.3,-57.03,8.57
+Methyl Pentanoate,-50.52,-50.42,7.04
+Ethyl Pentanoate,-56.52,-55.84,6.75
+Ethyl Isopentanoate,-56.0,-54.59,7.71
+Methyl Pivalate,-46.88,-45.52,9.57
+Ethyl Pivalate,-50.705,-50.95,9.36
+Methyl Hexanoate,-54.74,-54.11,7.04
+Ethyl Hexanoate,-60.17,-59.54,6.76
+Ethyl 2-Methylbutanoate,-55.4,-54.59,7.71
+Methanethiol,-24.725,-24.71,6.46
+Ethanethiol,-29.1,-28.17,6.45
+1-Propanethiol,-30.2,-31.87,6.45
+1-Butanethiol,-36.3,-35.57,6.45
+Dimethyl Sulfide,-30.795,-32.47,6.45
+Diethyl Sulfide,-40.22,-39.4,6.44
+Dipropyl Sulfide,-47.65,-46.8,6.44
+Carbon Disulfide,-28.71666666666667,-28.72,6.19
+Dimethyl Disulfide,-34.39666666666667,-32.73,6.48
+Diethyl Disulfide,-39.91,-39.66,6.47
+Dipropyl Disulfide,-45.14,-47.06,6.47
+Acetonitrile,-34.910999999999994,-35.24,6.35
+Propanenitrile,-39.52,-38.94,6.35
+Butanenitrile,-42.18,-42.64,6.36
+2-Methylpropanenitrile,-40.02,-41.38,7.37
+Pentanenitrile,-45.64,-46.33,6.36
+Butanedinitrile,-58.24,-58.87,6.38
+Pentanedinitrile,-64.0,-62.57,6.38
+Hexanedinitrile,-66.6,-66.27,6.38
+Ethenylbenzene,-35.0,-35.0,6.88
+Tetralin,-44.0,-44.0,5.96
+2-Buten-1-ol,-60.93,-60.23,6.31
+3-Buten-1-ol,-61.98,-59.35,6.32
+3-Pentyn-1-ol,-67.23,-67.23,6.64
+Methoxyethane,-33.5,-37.66,6.96
+1-Methoxypentane,-45.91,-48.75,6.97
+1-Propoxybutane,-49.76,-54.18,6.67
+1-Methoxyhexane,-51.9,-52.45,6.97
+1-Ethoxy-2-methoxyethane,-66.08,-61.73,7.27
+1-Methoxy-2-propoxyethane,-69.09,-65.43,7.27
+1-(2-Methoxypropoxy)butane,-72.49,-73.36,7.93
+"1,2-Dipropoxyethane",-76.79,-74.56,6.99
+Diglyme,-74.005,-80.39,7.82
+Diethylene glycol diethyl ether,-95.15333333333332,-91.24,7.3
+Triglyme,-102.37333333333332,-104.47,8.1
+Diethylene glycol dibutyl ether,-105.8,-106.03,7.3
+Tetraglyme,-125.46999999999998,-128.55,8.37
+2-Cyclohexen-1-ol,-70.9,-71.19,6.25
+glucose,-481.1645109,-481.16,9.46
+acetic acid,-52.8,-52.8,6.52
+n-Decane,,-48.59,6.34
+n-Undecane,,-52.29,6.35
+n-Dodecane,,-55.98,6.35
+n-Tridecane,,-59.68,6.35
+n-Tetradecane,,-63.38,6.35
+"2,2-Dimethylbutane",,-28.9,9.07
+3-Methylpentane,,-32.54,7.35
+"2,2-Dimethylpentane",,-32.6,9.07
+"2,3-Dimethylpentane",,-34.99,8.24
+"2,4-Dimethylpentane",,-34.99,8.24
+2-Methylhexane,,-36.24,7.35
+3-Methylhexane,,-36.24,7.35
+"2,3,4-Trimethylpentane",,-37.43,9.05
+3-Methylheptane,,-39.94,7.35
+"2,2,5-Trimethylhexane",,-38.75,9.81
+4-Methyloctane,,-43.64,7.36
+"1,4-Pentadiene",,-27.04,6.65
+1-Pentene,,-28.57,6.49
+2-Pentene,,-29.45,6.49
+3-Methyl-1-butene,,-27.31,7.49
+"1,5-Hexadiene",,-30.74,6.65
+4-Methyl-1-pentene,,-31.01,7.49
+2-Methyl-1-pentene,,-32.01,7.56
+"1,6-Heptadiene",,-34.43,6.65
+1-Heptene,,-35.96,6.5
+2-Heptene,,-36.84,6.49
+1-Nonene,,-43.36,6.5
+1-Pentyne,,-23.65,6.56
+1-Hexyne,,-27.35,6.56
+3-Hexyne,,-36.44,6.81
+"1,6-Heptadiyne",,-24.59,6.78
+1-Heptyne,,-31.04,6.56
+2-Heptyne,,-40.14,6.81
+2-Methyl-3-hexyne,,-38.89,7.76
+1-Octyne,,-34.74,6.57
+"2,2-Dimethyl-3-hexyne",,-38.95,9.41
+"1,8-Nonadiyne",,-31.99,6.79
+1-Nonyne,,-38.44,6.57
+"2,2,5-Trimethyl-3-hexyne",,-41.39,10.12
+"2,2,5,5-Tetramethyl-3-hexyne",,-41.45,11.43
+1-Ethyl-2-methylbenzene,,-42.21,7.19
+"1,2,4,5-Tetramethylbenzene",,-45.81,8.18
+1-Methyl-2-(1-methylethyl)benzene,,-42.97,8.36
+1-Methyl-3-(1-methylethyl)benzene,,-42.97,8.36
+1-Methyl-4-(1-methylethyl)benzene,,-42.97,8.36
+sec-Butylbenzene,,-43.3,7.82
+2-Methylpropylbenzene,,-44.99,7.54
+"1,3,5-Triethylbenzene",,-51.83,8.09
+n-Decylbenzene,,-68.43,6.56
+Methylcyclopentane,,-32.56,6.59
+Cycloheptane,,-36.99,5.69
+Cyclooctane,,-40.61,5.77
+Propylcyclopentane,,-39.96,6.59
+Pentylcyclopentane,,-47.35,6.59
+"1,3-Cyclopentadiene",,-30.47,5.52
+1-Methylcyclohexene,,-32.94,6.46
+Cycloheptene,,-37.35,5.68
+1-Decanol,,-83.07,6.16
+1-Undecanol,,-86.77,6.16
+1-Dodecanol,,-90.47,6.17
+3-Methyl-2-pentanol,,-67.56,7.86
+2-Octanone,,-59.29,6.56
+2-Decanone,,-66.69,6.56
+2-Undecanone,,-70.38,6.56
+1-Ethoxypropane,,-46.78,6.67
+2-Ethoxy-2-methylbutane,,-56.74,8.85
+isobutyl ether,,-55.37,8.5
+"1,1'-Oxybisbutane",,-57.87,6.68
+"1,4-Dimethoxybutane",,-63.7,7.54
+"1,5-Dimethoxypentane",,-67.4,7.54
+"1,3-Diethoxypropane",,-70.86,6.99
+"1,4-Diethoxybutane",,-74.56,6.99
+"1,2-Dibutoxyethane",,-81.95,7.0
+"1,1-Diethoxymethane",,-50.14,7.36
+Alpha-Phellandrene,,-42.24,8.25
+Alpha-Terpinene,,-38.65,8.11
+Beta-myrcene,,-44.37,8.74
+Beta-pinene,,-41.9,7.1
+Terpinolene,,-39.15,8.25
+Isopropyl Formate,,-41.44,7.41
+Butyl Formate,,-44.61,6.7
+Hexyl Formate,,-52.01,6.7
+Isopropyl Propionate,,-52.67,7.46
+Pentyl Propionate,,-59.54,6.76
+Isopropyl Butyrate,,-56.37,7.46
+Butyl Pentanoate,,-63.24,6.76
+Methyl Heptanoate,,-57.81,7.05
+Methyl Octanoate,,-61.51,7.05
+Ethyl Octanoate,,-66.94,6.76
+Methyl Nonanoate,,-65.21,7.05
+Ethyl Decanoate,,-74.33,6.76
+1-Pentanethiol,,-39.27,6.45
+1-Hexanethiol,,-42.97,6.46
+1-Heptanethiol,,-46.66,6.46
+3-Methylbutanethiol,,-38.02,7.45
+Methyl propyl Sulfide,,-39.63,6.44
+Hexanenitrile,,-50.03,6.36
+Octanenitrile,,-57.43,6.36
+4-Ethenylcyclohexene,,-38.7,6.79
+Indane,,-40.39,5.89
+Cyclobutanol,,-63.61,6.13
+Cyclopentanemethanol,,-67.05,6.41
+2-Cyclopentylethanol,,-70.74,6.42
+"1,1-Dimethoxyethane",,-49.29,8.23
+2-Methyloctane,,-43.64,7.36

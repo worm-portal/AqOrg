@@ -272,8 +272,13 @@ class Estimate():
         # load group contribution data
         if not isinstance(self.group_data, pd.DataFrame):
             if self.state == "aq":
-                with import_package_file(__name__, 'data/group_contribution_data.csv', as_file=True) as path:
-                    self.group_data = pd.read_csv(path, dtype=str)
+                if self.group_data is None:
+                    # load default aqueous group data
+                    with import_package_file(__name__, 'data/group_contribution_data.csv', as_file=True) as path:
+                        self.group_data = pd.read_csv(path, dtype=str)
+                else:
+                    # load custom aqueous group data
+                    self.group_data = pd.read_csv(self.group_data, dtype=str)
             elif self.state == "gas":
                 if self.ig_method == "Joback":
                     with import_package_file(__name__, 'data/joback_groups.csv', as_file=True) as path:
