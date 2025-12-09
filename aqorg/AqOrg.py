@@ -692,7 +692,7 @@ class Estimate():
             if self.Hig == None:
                 self.Hig = J_estimate["Hig"]
             if self.Sig == None:
-                self.Sig = ((float(self.Gig) - float(self.Hig))/-298.15)*1000 + self.SelementsJ_estimate["Hig"]
+                self.Sig = ((float(self.Gig) - float(self.Hig))/-298.15)*1000 + self.Selements
             if self.Cpig == None:
                 self.Cpig = J_estimate["Cpig"]
             # except:
@@ -719,18 +719,16 @@ class Estimate():
             self.Gaq = float("NaN")
 
         try:
-            if self.Saq == None:
-                self.Saq = float(self.Sig) + float(self.Sh)
-        except:
-            self.Saq = float("NaN")
-
-        try:
             if self.Haq == None:
-                #self.Haq = float(self.Hig) + float(self.Hh)
-                self.Haq = self.Gaq - (-(self.Selements - self.Saq)/1000)*-298.15
+                self.Haq = float(self.Hig) + float(self.Hh)
         except:
             self.Haq = float("NaN")
 
+        try:
+            if self.Saq == None:
+                self.Saq = ((float(self.Gaq) - float(self.Haq))/-298.15)*1000 + self.Selements
+        except:
+            self.Saq = float("NaN")
         try:
             if self.Cpaq == None:
                 self.Cpaq = self.Cpig + float(self.Cph)
