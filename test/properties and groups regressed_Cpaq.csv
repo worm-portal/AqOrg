@@ -1,0 +1,262 @@
+compound,actual,prediction,pred errs
+Propane,422.97,392.46,130.41
+n-Butane,485.0,475.38,130.43
+n-Pentane,572.0,558.31,130.46
+n-Hexane,635.3,641.23,130.48
+n-Heptane,705.2,724.15,130.5
+n-Octane,774.8,807.08,130.53
+2-Methylpropane,465.2,465.2,152.72
+"2,2-Dimethylpropane",606.8,606.8,186.72
+Propene,342.4,361.3,125.91
+"1,3-Butadiene",404.83,413.06,121.26
+1-Butene,474.7,444.22,125.93
+2-Methyl-1-propene,453.2,453.2,133.83
+Propyne,263.7,263.7,131.79
+Benzene,372.1,378.09,115.0
+Methylbenzene,443.6,431.62,116.68
+"1,3-Dimethylbenzene",483.0,485.16,118.34
+"1,4-Dimethylbenzene",481.33,485.16,118.34
+Ethylbenzene,518.5,520.79,129.97
+n-Propylbenzene,606.0,603.71,129.99
+Cyclopropane,358.5,358.5,123.21
+Cyclopentane,406.0,426.62,114.58
+Cyclohexane,516.0,495.37,116.18
+Methylcyclohexane,640.0,640.0,135.23
+Methanol,159.75,164.84,132.76
+Ethanol,262.44,284.35,126.14
+n-Propanol,356.18,367.27,126.16
+n-Butanol,445.46,450.2,126.19
+1-Pentanol,542.5,533.12,126.21
+n-Hexanol,621.0,616.04,126.23
+n-Heptanol,717.0,698.97,126.26
+n-Octanol,778.0,781.89,126.28
+2-Propanol,369.75,376.08,142.28
+2-Butanol,465.33,459.0,142.3
+2-Methyl-2-propanol,470.38,463.99,173.25
+2-Methyl-2-butanol,550.0,546.92,173.27
+2-Propen-1-ol,341.0,336.11,121.5
+Cyclopentanol,465.0,444.37,121.88
+Cyclohexanol,492.5,513.13,123.37
+Acetone,236.38,250.93,134.67
+2-Butanone,336.87,333.85,134.69
+3-Pentanone,428.3,416.77,134.72
+Diethyl ether,423.0,413.53,136.3
+2-Methoxy-2-Methylpropane,464.2,473.67,185.46
+Methyl Formate,242.6,242.6,142.31
+Methyl Acetate,294.2,279.64,143.97
+Ethyl Acetate,384.6,399.16,137.89
+Dimethyl Sulfide,302.1,311.65,125.62
+Diethyl Sulfide,436.6,455.15,132.14
+Dipropyl Sulfide,649.1,621.0,132.18
+Dimethyl Disulfide,380.2,370.65,125.41
+Diethyl Disulfide,504.6,514.15,131.94
+Acetonitrile,196.67,199.37,131.06
+Propanenitrile,285.0,282.3,131.08
+glucose,363.0,363.0,156.58
+n-Nonane,,890.0,130.55
+n-Decane,,972.93,130.57
+n-Undecane,,1055.85,130.59
+n-Dodecane,,1138.77,130.62
+n-Tridecane,,1221.7,130.64
+n-Tetradecane,,1304.62,130.66
+2-Methylbutane,,548.12,152.74
+"2,2-Dimethylbutane",,689.72,186.73
+"2,3-Dimethylbutane",,620.86,172.18
+2-Methylpentane,,631.05,152.76
+3-Methylpentane,,631.05,152.76
+"2,2-Dimethylpentane",,772.65,186.75
+"2,3-Dimethylpentane",,703.79,172.2
+"2,4-Dimethylpentane",,703.79,172.2
+2-Methylhexane,,713.97,152.78
+"3,3-Dimethylpentane",,772.65,186.75
+3-Methylhexane,,713.97,152.78
+"2,2,4-Trimethylpentane",,845.39,202.96
+"2,3,4-Trimethylpentane",,776.53,189.65
+3-Methylheptane,,796.9,152.8
+"2,2,5-Trimethylhexane",,928.31,202.97
+4-Methyloctane,,879.82,152.82
+"1,4-Pentadiene",,495.99,121.28
+"2-Methyl-1,3-butadiene",,504.96,129.47
+1-Pentene,,527.15,125.95
+2-Methyl-2-butene,,525.79,147.36
+2-Pentene,,516.81,140.22
+3-Methyl-1-butene,,516.96,148.91
+"1,5-Hexadiene",,578.91,121.31
+4-Methyl-1-pentene,,599.89,148.93
+2-Methyl-1-pentene,,619.05,133.87
+1-Hexene,,610.07,125.98
+"1,6-Heptadiene",,661.83,121.33
+1-Heptene,,692.99,126.0
+2-Heptene,,682.66,140.27
+1-Octene,,775.92,126.02
+1-Nonene,,858.84,126.05
+1-Butyne,,346.62,131.81
+1-Pentyne,,429.55,131.84
+1-Hexyne,,512.47,131.86
+"1,6-Heptadiyne",,466.64,133.24
+1-Heptyne,,595.4,131.88
+1-Octyne,,678.32,131.9
+"1,8-Nonadiyne",,632.48,133.29
+1-Nonyne,,761.24,131.92
+"1,2-Dimethylbenzene",,485.16,118.34
+"1,3,5-Trimethylbenzene",,538.69,119.97
+1-Ethyl-2-methylbenzene,,574.32,131.46
+"1,2,3-Trimethylbenzene",,538.69,119.97
+"1,2,4-Trimethylbenzene",,538.69,119.97
+"1,2,4,5-Tetramethylbenzene",,592.23,121.58
+2-Methylpropylbenzene,,676.45,152.36
+n-Butylbenzene,,686.64,130.01
+n-Pentylbenzene,,769.56,130.04
+"1,3,5-Triethylbenzene",,806.19,155.64
+n-Hexylbenzene,,852.48,130.06
+n-Decylbenzene,,1184.18,130.15
+Methylcyclopentane,,571.25,133.86
+Cycloheptane,,564.13,117.75
+Cyclooctane,,632.88,119.3
+Propylcyclopentane,,737.1,133.91
+Pentylcyclopentane,,902.95,133.95
+1-Nonanol,,864.82,126.3
+1-Decanol,,947.74,126.33
+1-Undecanol,,1030.66,126.35
+1-Dodecanol,,1113.59,126.37
+2-Methyl-1-propanol,,440.01,149.11
+"2,2-Dimethyl-1-propanol",,581.61,183.78
+2-Methyl-1-butanol,,522.94,149.13
+2-Pentanol,,541.93,142.32
+3-Methyl-1-butanol,,522.94,149.13
+3-Pentanol,,541.93,142.32
+"2,3-Dimethyl-2-butanol",,619.66,190.63
+2-Ethyl-1-butanol,,605.86,149.15
+2-Hexanol,,624.85,142.34
+2-Methyl-1-pentanol,,605.86,149.15
+3-Hexanol,,624.85,142.34
+3-Methyl-2-pentanol,,614.67,163.01
+3-Methyl-3-pentanol,,629.84,173.29
+4-Methyl-2-pentanol,,614.67,163.01
+3-Heptanol,,707.77,142.36
+2-Heptanol,,707.77,142.36
+3-Ethyl-3-Pentanol,,712.77,173.3
+4-Heptanol,,707.77,142.36
+2-Ethyl-1-Hexanol,,771.71,149.19
+2-Octanol,,790.7,142.38
+3-Octanol,,790.7,142.38
+4-Penten-1-ol,,501.96,121.55
+Cycloheptanol,,581.88,124.85
+Cyclohexanemethanol,,614.81,131.14
+Cyclooctanol,,650.63,126.32
+2-Pentanone,,416.77,134.72
+3-Methyl-2-butanone,,406.59,156.39
+2-Hexanone,,499.7,134.74
+2-Methyl-3-pentanone,,489.51,156.41
+"3,3-Dimethyl-2-butanone",,548.19,189.73
+3-Hexanone,,499.7,134.74
+3-Methyl-2-pentanone,,489.51,156.41
+4-Methyl-2-pentanone,,489.51,156.41
+2-Heptanone,,582.62,134.76
+4-Heptanone,,582.62,134.76
+"2,4-Dimethyl-3-pentanone",,562.25,175.45
+2-Octanone,,665.55,134.78
+"2,6-Dimethyl-4-heptanone",,728.1,175.48
+2-Nonanone,,748.47,134.8
+2-Decanone,,831.39,134.83
+2-Undecanone,,914.32,134.85
+Methoxymethane,,174.51,148.34
+1-Methoxypropane,,376.95,142.47
+2-Methoxypropane,,385.75,156.92
+1-Methoxy-2-methylpropane,,449.69,163.14
+2-Ethoxypropane,,505.26,151.36
+1-Methoxybutane,,459.87,142.49
+1-Ethoxypropane,,496.46,136.32
+2-Methoxybutane,,468.67,156.94
+Isopropyl propyl ether,,588.19,151.38
+"2,2'-Oxybispropane",,596.99,165.05
+"1,1'-Oxybispropane",,579.38,136.34
+1-Ethoxybutane,,579.38,136.34
+2-Ethoxy-2-methylpropane,,593.18,180.78
+2-Methoxy-2-methylbutane,,556.59,185.48
+2-Ethoxy-2-methylbutane,,676.1,180.8
+isobutyl ether,,724.86,176.7
+"1,1'-Oxybisbutane",,745.23,136.38
+"1,2-Dimethoxyethane",,278.51,153.56
+"1,2-Diethoxyethane",,517.53,141.96
+"1,4-Dimethoxybutane",,444.36,153.6
+"1,5-Dimethoxypentane",,527.28,153.62
+"1,3-Diethoxypropane",,600.45,141.98
+"1,4-Diethoxybutane",,683.38,142.0
+"1,2-Dibutoxyethane",,849.23,142.04
+Beta-myrcene,,887.06,146.58
+Ethyl Formate,,362.11,136.15
+Propyl Formate,,445.03,136.17
+Isopropyl Formate,,453.84,151.23
+Isobutyl Formate,,517.78,157.67
+Butyl Formate,,527.96,136.2
+Isopentyl Formate,,600.7,157.69
+Pentyl Formate,,610.88,136.22
+Hexyl Formate,,693.81,136.24
+Isopropyl Acetate,,490.88,152.79
+Propyl Acetate,,482.08,137.91
+Isobutyl Acetate,,554.82,159.17
+Butyl Acetate,,565.0,137.93
+tert-Butyl Acetate,,578.8,181.99
+sec-Butyl Acetate,,573.81,152.81
+n-Pentyl Acetate,,647.93,137.96
+Isopentyl Acetate,,637.74,159.19
+n-Hexyl Acetate,,730.85,137.98
+Methyl Propionate,,362.57,143.99
+Ethyl Propionate,,482.08,137.91
+Propyl Propionate,,565.0,137.93
+Isopropyl Propionate,,573.81,152.81
+Isobutyl Propionate,,637.74,159.19
+Butyl Propionate,,647.93,137.96
+Pentyl Propionate,,730.85,137.98
+Methyl Butyrate,,445.49,144.01
+Ethyl Butyrate,,565.0,137.93
+Isopropyl Butyrate,,656.73,152.83
+Propyl Butyrate,,647.93,137.96
+Butyl Butyrate,,730.85,137.98
+Methyl Isobutyrate,,435.31,164.47
+Ethyl Isobutyrate,,554.82,159.17
+Isobutyl Isobutyrate,,710.48,177.93
+Methyl Pentanoate,,528.42,144.03
+Ethyl Pentanoate,,647.93,137.96
+Butyl Pentanoate,,813.77,138.0
+Ethyl Isopentanoate,,637.74,159.19
+Methyl Pivalate,,576.91,196.44
+Ethyl Pivalate,,696.42,192.03
+Methyl Hexanoate,,611.34,144.06
+Ethyl Hexanoate,,730.85,137.98
+Methyl Heptanoate,,694.26,144.08
+Methyl Octanoate,,777.19,144.1
+Ethyl Octanoate,,896.7,138.02
+Ethyl 2-Methylbutanoate,,637.74,159.19
+Methyl Nonanoate,,860.11,144.12
+Ethyl Decanoate,,1062.55,138.06
+Methyl propyl Sulfide,,466.32,128.94
+Dipropyl Disulfide,,680.0,131.98
+Butanenitrile,,365.22,131.1
+2-Methylpropanenitrile,,355.04,153.29
+Pentanenitrile,,448.14,131.13
+Hexanenitrile,,531.07,131.15
+Octanenitrile,,696.92,131.19
+Butanedinitrile,,255.06,131.77
+Pentanedinitrile,,337.98,131.79
+Hexanedinitrile,,420.91,131.82
+2-Buten-1-ol,,408.7,136.26
+3-Buten-1-ol,,419.04,121.53
+Methoxyethane,,294.02,142.45
+1-Methoxypentane,,542.79,142.51
+1-Propoxybutane,,662.3,136.36
+1-Methoxyhexane,,625.72,142.53
+1-Ethoxy-2-methoxyethane,,398.02,147.88
+1-Methoxy-2-propoxyethane,,480.94,147.9
+1-(2-Methoxypropoxy)butane,,655.6,161.9
+"1,2-Dipropoxyethane",,683.38,142.0
+Diglyme,,382.5,158.61
+Diethylene glycol diethyl ether,,621.53,147.41
+Triglyme,,486.5,163.5
+Diethylene glycol dibutyl ether,,953.22,147.49
+Tetraglyme,,590.5,168.25
+Cyclobutanol,,375.62,120.36
+Cyclopentanemethanol,,546.06,129.73
+2-Cyclopentylethanol,,628.99,129.75
+2-Methyloctane,,879.82,152.82

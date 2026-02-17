@@ -17,6 +17,7 @@ from chemparse import parse_formula
 from datetime import datetime
 from wormutils import Error_Handler, find_HKF, import_package_file
 
+
 def find_sigfigs(x):
     
     '''
@@ -94,10 +95,14 @@ class Estimate():
     show : bool, default True
         Show a diagram of the molecule?
     
-    group_data : str, optional
-        Path of a CSV containing custom group contribution data. If `state="aq"`
-        then the CSV should contain hydration properties. If `state="gas"` then
-        the CSV should contain ideal gas properties.
+    ig_group_data : str, optional
+        Path of a CSV containing custom ideal gas group contribution data.
+
+    hyd_group_data : str, optional
+        Path of a CSV containing custom hydration property group contribution data.
+
+    aq_group_data : str, optional
+        Path of a CSV containing custom aqueous group contribution data.
     
     test : bool, default False
         Perform a simple group matching test instead of estimating properties?
@@ -176,8 +181,8 @@ class Estimate():
     
     """
     
-    def __init__(self, name=None, smiles=None, show=True, group_data=None,
-                       test=False, state='aq', ig_method="Joback",
+    def __init__(self, name=None, smiles=None, show=True, ig_group_data=None, hyd_group_data=None, aq_group_data=None,
+                       test=False, state='aq', ig_method="Joback", aq_method="hyd+ig", round_sf=True,
                        save=False, hide_traceback=True, **kwargs):
                        # E_units="J" # not implemented... tricky because groups
                                      # are in both kJ and J units.
@@ -188,6 +193,7 @@ class Estimate():
         self.smiles = smiles
         self.state = state
         self.ig_method = ig_method
+        self.aq_method = aq_method
         
         # valid kwargs
         self.Gh = None
@@ -213,10 +219,26 @@ class Estimate():
         self.Saq = None
         self.Cpaq = None
 
+        if "pcp_compound" not in list(kwargs.keys()):
+            self.pcp_compound = None
+
         for key, value in kwargs.items():
             self.__setattr__(key, value)
         
-        self.group_data = group_data
+        self.ig_group_data = ig_group_data
+        self.hyd_group_data = hyd_group_data
+        self.aq_group_data = aq_group_data
+
+        if self.state == "gas" and ig_group_data != None:
+            self.group_data = ig_group_data
+        elif self.state == "hyd" and hyd_group_data != None:
+            self.group_data = hyd_group_data
+        elif self.state == "aq" and aq_group_data != None:
+            self.group_data = aq_group_data
+        else:
+            self.group_data = None
+
+
         self.load_group_data()
         self.get_mol_smiles_formula_formula_dict()
         
@@ -227,7 +249,7 @@ class Estimate():
             self.display_molecule(save=save)
             
         if test:
-            print(self.__test_group_match())            
+            print(self.__test_group_match())
         else:
             # load properties of the elements
             # Cox, J. D., Wagman, D. D., and Medvedev, V. A., CODATA Key Values
@@ -241,22 +263,55 @@ class Estimate():
             
             self.Selements = self.__entropy()
             self.note = ""
-            self.charge = 0 # !
+            self.charge = 0 # TODO: allow charge!
             
-            if state == 'aq':
-                self.OBIGT = self.__estimate_hydration()
-            elif state == 'gas':
-                if ig_method == "Joback":
-                    self.__estimate_joback()
+            self.__set_groups()
+
+            if state == 'gas':  # calculates self.Xig properties
+                if self.ig_method == "Joback":
+                    self.__est_joback()
                 else:
-                    self.__estimate_ig()
+                    self.__est_ig(round_sf=round_sf)
+            elif state == 'hyd':  # calculates self.Xh properties
+                self.__est_hyd(round_sf=round_sf)
+            elif state == 'aq':  # calculates self.Xaq properties
+                if self.aq_method != "aqueous":
+                    # ideal gas and hydration properties summed to get aqueous properties
+                    if self.ig_method == "Joback":
+
+                        ig_props = Estimate(name, smiles=smiles, state='gas', ig_method="Joback", show=False, ig_group_data=self.ig_group_data, round_sf=False,
+                                            **{"pcp_compound":self.pcp_compound, "Gig":self.Gig, "Hig":self.Hig, "Sig":self.Sig, "Cpig":self.Cpig})
+
+                    else:
+                        ig_props = Estimate(smiles=self.smiles, name=self.name, state="gas", show=False, ig_method=self.ig_method, ig_group_data=self.ig_group_data, round_sf=False,
+                                            **{"pcp_compound":self.pcp_compound, "Gig":self.Gig, "Hig":self.Hig, "Sig":self.Sig, "Cpig":self.Cpig})
+                    
+                    self.Gig = ig_props.Gig
+                    self.Hig = ig_props.Hig
+                    self.Sig = ig_props.Sig
+                    self.Cpig = ig_props.Cpig
+
+                    hyd_props = Estimate(smiles=self.smiles, name=self.name, state="hyd", show=False, hyd_group_data=self.hyd_group_data, round_sf=False,
+                                         **{"pcp_compound":self.pcp_compound, "Gh":self.Gh, "Hh":self.Hh, "Sh":self.Sh, "Cph":self.Cph, "V":self.V})
+
+                    self.Gh = hyd_props.Gh
+                    self.Hh = hyd_props.Hh
+                    self.Sh = hyd_props.Sh
+                    self.Cph = hyd_props.Cph
+                    self.V = hyd_props.V
+
+                self.__est_aq(round_sf=round_sf)
             else:
-                self.err_handler.raise_exception("State must be 'aq' or 'gas'.")
+                self.err_handler.raise_exception("State must be 'aq', 'hyd', or 'gas'.")
+
+                self.OBIGT = self.__convert_to_OBIGT()
+
 
     def get_mol_smiles_formula_formula_dict(self):
         if not isinstance(self.smiles, str):
-            # look up compound on PubChem
-            self.pcp_compound = pcp.get_compounds(self.name, "name")
+            if self.pcp_compound == None:
+                # look up compound on PubChem
+                self.pcp_compound = pcp.get_compounds(self.name, "name")
             if len(self.pcp_compound) == 0:
                 self.err_handler.raise_exception("Could not find '" + self.name + "' in PubChem's online database.")
             self.smiles = self.pcp_compound[0].connectivity_smiles 
@@ -274,10 +329,18 @@ class Estimate():
             if self.state == "aq":
                 if self.group_data is None:
                     # load default aqueous group data
-                    with import_package_file(__name__, 'data/group_contribution_data.csv', as_file=True) as path:
+                    with import_package_file(__name__, 'data/aq_group_contribution_data.csv', as_file=True) as path:
                         self.group_data = pd.read_csv(path, dtype=str)
                 else:
                     # load custom aqueous group data
+                    self.group_data = pd.read_csv(self.group_data, dtype=str)
+            elif self.state == "hyd":
+                if self.group_data is None:
+                    # load default hydration group data
+                    with import_package_file(__name__, 'data/hyd_group_contribution_data.csv', as_file=True) as path:
+                        self.group_data = pd.read_csv(path, dtype=str)
+                else:
+                    # load custom hydration group data
                     self.group_data = pd.read_csv(self.group_data, dtype=str)
             elif self.state == "gas":
                 if self.ig_method == "Joback":
@@ -287,7 +350,7 @@ class Estimate():
                     # load custom gas group
                     self.group_data = pd.read_csv(self.group_data, dtype=str)
             else:
-                self.err_handler.raise_exception("State is unrecognized. Must be either 'aq' or 'gas'.")
+                self.err_handler.raise_exception("State is unrecognized. Must be either 'aq', 'hyd', or 'gas'.")
 
         self.group_data['elem'] = self.group_data['elem'].fillna('')
         self.pattern_dict = pd.Series(self.group_data["elem"].values,
@@ -470,9 +533,8 @@ class Estimate():
         return {key:value for key,value in zip(match_dict.keys(), match_dict.values()) if value !=0}
         
 
-    def __est_ig(self):
-        props = ["Gig", "Hig", "Cpig"]
-        
+    def __est_ig(self, props=["Gig", "Hig", "Sig", "Cpig"], round_sf=True):
+
         for prop in props:
             err_str = prop + "_err"
 
@@ -480,55 +542,23 @@ class Estimate():
             if prop in dir(self):
                 if not self.__getattribute__(prop) is None:
                     continue
-            
-            mol_prop = 0
-            error_groups = []
-            mol_err = 999
-            prop_errs = []
-            n_dec = 999
 
-            for group in self.groups:
+            if prop == "Sig":
+                # calculate Sig
+                self.Sig = ((self.Gig - self.Hig)/-298.15)*1000 + self.Selements
 
-                try:
-                    contains_group = self.group_matches.loc[self.name, group][0] != 0
-                except:
-                    contains_group = self.group_matches.loc[self.name, group] != 0
+            else:
+                self.__sum_props(prop)
 
-                # if this molecule contains this group...
-                if contains_group:
-                    try:
-                        # add number of groups multiplied by its contribution
-                        mol_prop += self.group_matches.loc[self.name, group] * float(self.group_data.loc[group, prop])
-                    except:
-                        error_groups.append(group)
-                    
-            if len(error_groups) == 0:
-    
-                # add Y0
-                mol_prop += float(self.group_data.loc["Yo", prop])
-    
-                # propagate error of summed groups: sqrt(a**2 + b**2 + ...)
-                mol_err = round(math.sqrt(sum([float(err)**2 for err in prop_errs])), n_dec)
-    
-                # # format output as string (preserves trailing zeros)
-                # mol_prop = format(mol_prop, '.'+str(n_dec)+'f')
-                # mol_err = format(mol_err, '.'+str(n_dec)+'f')
-
-                self.__setattr__(prop, mol_prop)
-                self.__setattr__(err_str, mol_err)
-
-        if len(error_groups) > 0:
-            msg = self.name + " encountered errors with group(s): " +\
-                str(error_groups) + ". Are these groups assigned "+\
-                "ideal gas properties in the data file?"
-            self.err_handler.raise_exception(msg)
-                    
-        # calculate Sig
-        self.Sig = ((self.Gig - self.Hig)/-298.15)*1000 + self.Selements
+        # TODO: employ round_sf for ideal gas estimation
         
     
     def __est_joback(self):
         
+        # Estimate standard state ideal gas properties of a molecule using the Joback
+        # method. (Joback K. G., Reid R. C., "Estimation of Pure-Component Properties
+        # from Group-Contributions", Chem. Eng. Commun., 57, 233–243, 1987.)
+
         # values to be added to final estimate of each property
         joback_props = {"Gig":53.88, "Hig":68.29, # kJ/mol
                         "Cpig_a":-37.93, "Cpig_b":0.210, # j/mol/K
@@ -537,6 +567,11 @@ class Estimate():
         for prop in joback_props.keys():
             mol_prop = 0
             error_groups = []
+
+            # if property is already defined, skip estimating it
+            if prop in dir(self):
+                if not self.__getattribute__(prop) is None:
+                    continue
 
             for group in self.groups:
 
@@ -560,183 +595,239 @@ class Estimate():
             self.err_handler.raise_exception("" + self.name + " encountered errors with group(s): "
                 ""+str(error_groups) + ". Are these groups assigned "
                 "ideal gas properties in the Joback data file?")
-            
-        # calculate Cpig
-        T=298.15
-        self.Cpig = self.Cpig_a + self.Cpig_b*T + self.Cpig_c*T**2 +\
-                    self.Cpig_d*T**3
         
-        # calculate Sig
-        self.Sig = ((self.Gig - self.Hig)/-298.15)*1000 + self.Selements
-    
-    
-    def __est_hydration(self, props=["Gh", "Hh", "Sh", "Cph", "V"]):
+        if self.__getattribute__("Cpig") is None:
+            # calculate Cpig
+            T=298.15
+            self.Cpig = self.Cpig_a + self.Cpig_b*T + self.Cpig_c*T**2 +\
+                        self.Cpig_d*T**3
+        
+        if self.__getattribute__("Sig") is None:
+            # calculate Sig
+            self.Sig = ((self.Gig - self.Hig)/-298.15)*1000 + self.Selements
 
+        # TODO: employ round_sf for ideal gas estimation
+    
+    
+    def __est_hyd(self, props=["Gh", "Hh", "Sh", "Cph", "V"], round_sf=True):
         for prop in props:
-            if self.__getattribute__(prop) == None:
-                err_str = prop + "_err"
+            err_str = prop + "_err"
 
-                # derive Sh, entropy of hydration, in J/mol K
-                if prop == "Sh":
-                    # Entropy calculated from S = (G-H)/(-Tref)
-                    mol_prop = (float(self.Gh) - float(self.Hh))/(-298.15)
-                    mol_prop = mol_prop*1000 # convert kJ/molK to J/molK
+            # if property is already defined, skip estimating it
+            if prop in dir(self):
+                if not self.__getattribute__(prop) is None:
+                    continue
 
-                    # propagate error from Gh and Hh to estimate Sh error.
-                    # equation used: Sh_err = Sh*sqrt((Gh_err/Gh)**2 + (Hh_err/Hh)**2)
-                    Gh_err_float = float(self.Gh_err)/float(self.Gh)
-                    Hh_err_float = float(self.Hh_err)/float(self.Hh)
-                    mol_err = abs(mol_prop)*math.sqrt(Gh_err_float**2 + Hh_err_float**2)
+            # derive Sh, entropy of hydration, in J/mol K
+            if prop == "Sh":
+ 
+                # Entropy calculated from S = (G-H)/(-Tref)
+                mol_prop = (float(self.Gh) - float(self.Hh))/(-298.15)
+                mol_prop = mol_prop*1000 # convert kJ/molK to J/molK
 
+                # propagate error from Gh and Hh to estimate Sh error.
+                # equation used: Sh_err = Sh*sqrt((Gh_err/Gh)**2 + (Hh_err/Hh)**2)
+                Gh_err_float = float(self.Gh_err)/float(self.Gh)
+                Hh_err_float = float(self.Hh_err)/float(self.Hh)
+                mol_err = abs(mol_prop)*math.sqrt(Gh_err_float**2 + Hh_err_float**2)
+
+                if round_sf:
                     # check whether Gh or Hh as the fewest sigfigs
                     sf = min([find_sigfigs(self.Gh), find_sigfigs(self.Hh)])
 
                     # round Sh to this number of sigfigs
-                    mol_prop = sigfig.round(str(mol_prop), sigfigs=sf)
+                    mol_prop_formatted = sigfig.round(str(mol_prop), sigfigs=sf)
 
                     # check how many decimal places Sh has after sigfig rounding
-                    if "." in mol_prop:
-                        this_split = mol_prop.split(".")
+                    if "." in mol_prop_formatted:
+                        this_split = mol_prop_formatted.split(".")
                         n_dec = len(this_split[len(this_split)-1])
                     else:
                         n_dec = 0
 
                     # assign Sh and Sh_err
-                    #self.__setattr__(prop, mol_prop) # for trailing zeros, but must store Sh as str.
-                    #self.__setattr__(err_str, format(mol_err, '.'+str(n_dec)+'f')) # for trailing zeros, but must store Sh_err as str.
                     self.__setattr__(prop, float(mol_prop))
                     self.__setattr__(err_str, round(float(mol_err), n_dec))
+                    self.__setattr__(prop+"_n_dec", n_dec)
+                    self.__setattr__(prop+"_formatted", format(mol_prop, '.'+str(n_dec)+'f'))
+                    self.__setattr__(prop+"_err_formatted", format(mol_err, '.'+str(n_dec)+'f'))
+                
+                else:
+                    self.__setattr__(prop, float(mol_prop))
+                    self.__setattr__(err_str, float(mol_err))
+                    self.__setattr__(prop+"_n_dec", None)
+                    self.__setattr__(prop+"_formatted", None)
+                    self.__setattr__(prop+"_err_formatted", None)
 
 
-                    continue
+                continue
 
-                # For all properties except for Sh:
-                # initialize variables and lists
-                mol_prop = 0
-                mol_err = 999
-                prop_errs = []
-                n_dec = 999
-                error_groups = []
+            else:
+                self.__sum_props(prop, round_sf=round_sf)
 
-                for group in self.groups:
 
-                    try:
-                        contains_group = self.group_matches.loc[self.name, group][0] != 0
-                    except:
-                        contains_group = self.group_matches.loc[self.name, group] != 0
+    def __sum_props(self, prop, round_sf=True):
+            if prop != None:
+                if self.__getattribute__(prop) == None:
+                    err_str = prop + "_err"
 
-                    # if this molecule contains this group...
-                    if contains_group:
+                    # For all properties except for Sh:
+                    # initialize variables and lists
+                    mol_prop = 0
+                    mol_err = 999
+                    prop_errs = []
+                    n_dec = 999
+                    error_groups = []
+
+                    for group in self.groups:
 
                         try:
-                            # add number of groups multiplied by its contribution
-                            mol_prop += self.group_matches.loc[self.name, group] * float(self.group_data.loc[group, prop])
-    
-                            # round property to smallest number of decimal places
-    
-                            if not math.isnan(float(self.group_data.loc[group, prop])):
-                                if "." in self.group_data.loc[group, prop]:
-                                    this_split = self.group_data.loc[group, prop].split(".")
-                                    n_dec_group = len(this_split[len(this_split)-1])
-                                else:
-                                    n_dec_group = 0
-    
-                                if n_dec_group < n_dec:
-                                    n_dec = n_dec_group
-        
-                                # handle group std errors
-                                try:
-                                    float(self.group_data.loc[group, err_str]) # assert that this group's error is numeric
-                                    prop_errs.append(self.group_data.loc[group, err_str]) # append error
-                                except:
-                                    # if group's error is non-numeric, pass
-                                    pass
-
+                            contains_group = self.group_matches.loc[self.name, group][0] != 0
                         except:
-                            error_groups.append(group)
+                            contains_group = self.group_matches.loc[self.name, group] != 0
 
-                if len(error_groups) == 0:
+                        # if this molecule contains this group...
+                        if contains_group:
 
-                    # add Y0
-                    mol_prop += float(self.group_data.loc["Yo", prop])
+                            try:
 
-                    # propagate error of summed groups: sqrt(a**2 + b**2 + ...)
-                    mol_err = round(math.sqrt(sum([float(err)**2 for err in prop_errs])), n_dec)
+                                # add number of groups multiplied by its contribution
+                                mol_prop += self.group_matches.loc[self.name, group] * float(self.group_data.loc[group, prop])
 
-#                     # format output as string (preserves trailing zeros)
-#                     mol_prop = format(mol_prop, '.'+str(n_dec)+'f')
-#                     mol_err = format(mol_err, '.'+str(n_dec)+'f')
+                                if not math.isnan(float(self.group_data.loc[group, prop])):
+                                    if "." in self.group_data.loc[group, prop]:
+                                        this_split = self.group_data.loc[group, prop].split(".")
+                                        n_dec_group = len(this_split[len(this_split)-1])
+                                    else:
+                                        n_dec_group = 0
+        
+                                    if n_dec_group < n_dec:
+                                        n_dec = n_dec_group
+            
+                                    # handle group std errors
+                                    try:
+                                        float(self.group_data.loc[group, err_str]) # assert that this group's error is numeric
+                                        prop_errs.append(self.group_data.loc[group, err_str]) # append error
+                                    except:
+                                        # if group's error is non-numeric, pass
+                                        pass
 
-                    self.__setattr__(prop, mol_prop)
-                    self.__setattr__(err_str, mol_err)
+                            except:
+                                error_groups.append(group)
+
+                    if len(error_groups) == 0:
+
+                        # add Y0
+                        mol_prop += float(self.group_data.loc["Yo", prop])
+
+                        # propagate error of summed groups: sqrt(a**2 + b**2 + ...)
+                        mol_err = round(math.sqrt(sum([float(err)**2 for err in prop_errs])), n_dec)
+
+                        if round_sf:
+                            self.__setattr__(prop, round(float(mol_prop), n_dec)) 
+                            self.__setattr__(err_str, round(float(mol_err), n_dec))
+                            self.__setattr__(prop+"_n_dec", n_dec)
+                            self.__setattr__(prop+"_formatted", format(mol_prop, '.'+str(n_dec)+'f'))
+                            self.__setattr__(prop+"_err_formatted", format(mol_err, '.'+str(n_dec)+'f'))
+                        else:
+                            self.__setattr__(prop, float(mol_prop)) 
+                            self.__setattr__(err_str, float(mol_err))
+                            self.__setattr__(prop+"_n_dec", None)
+                            self.__setattr__(prop+"_formatted", None)
+                            self.__setattr__(prop+"_err_formatted", None)
+
+                    else:
+                        msg = self.name + " encountered errors with group(s): " +\
+                            str(error_groups) + ". Are these groups assigned "+\
+                            "{} properties in the data file?".format(self.state)
+                        self.err_handler.raise_exception(msg)
+
+
+    def __est_aq(self, props=["Gaq", "Haq", "Saq", "Cpaq", "V"], round_sf=True):
+
+        if self.aq_method == "aqueous":
+            # building from aqueous groups only
+            for prop in props:
+                err_str = prop + "_err"
+
+                # if property is already defined, skip estimating it
+                if prop in dir(self):
+                    if not self.__getattribute__(prop) is None:
+                        continue
+
+                # derive Saq, eaqueous third law entropy, in J/mol K
+                if prop == "Saq":
+                    # needs sig figs and error propagation
+                    mol_prop = ((float(self.Gaq) - float(self.Haq))/-298.15)*1000 + self.Selements
+
+                    # propagate error from Gaq and Haq to estimate Saq error.
+                    # equation used: Saq_err = Saq*sqrt((Gaq_err/Gaq)**2 + (Haq_err/Haq)**2)
+                    Gaq_err_float = float(self.Gaq_err)/float(self.Gaq)
+                    Haq_err_float = float(self.Haq_err)/float(self.Haq)
+                    mol_err = abs(mol_prop)*math.sqrt(Gaq_err_float**2 + Haq_err_float**2)
+
+                    if round_sf:
+                        # check whether Gaq or Haq as the fewest sigfigs
+                        sf = min([find_sigfigs(self.Gaq), find_sigfigs(self.Haq)])
+
+                        # round Saq to this number of sigfigs
+                        Saq_formatted = sigfig.round(str(mol_prop), sigfigs=sf)
+
+                        # check how many decimal places Sh has after sigfig rounding
+                        if "." in Saq_formatted:
+                            this_split = Saq_formatted.split(".")
+                            n_dec = len(this_split[len(this_split)-1])
+                        else:
+                            n_dec = 0
+
+                        # assign Saq_err
+                        self.__setattr__("Saq", round(float(mol_prop), n_dec))
+                        self.__setattr__("Saq_err", round(float(mol_err), n_dec))
+                        self.__setattr__("Saq_n_dec", n_dec)
+                        self.__setattr__("Saq_formatted", format(mol_prop, '.'+str(n_dec)+'f'))
+                        self.__setattr__("Saq_err_formatted", format(mol_err, '.'+str(n_dec)+'f'))
+                    else:
+                        self.__setattr__("Saq", float(mol_prop))
+                        self.__setattr__("Saq_err", float(mol_err))
+                        self.__setattr__("Saq_n_dec", None)
+                        self.__setattr__("Saq_formatted", None)
+                        self.__setattr__("Saq_err_formatted", None)
 
                 else:
-                    msg = self.name + " encountered errors with group(s): " +\
-                        str(error_groups) + ". Are these groups assigned "+\
-                        "hydration properties in the data file?"
-                    self.err_handler.raise_exception(msg)
-        
-        if self.Gig != None and self.Hig != None and self.Sig != None and self.Cpig != None:
-            # no ideal gas estimation needed.
-            # TODO: Modify if statement to allow calculating remainder if
-            # two out of three are provided for: Gig, Hig, Sig
-            pass
-        else:
-            # Joback estimation of the Gibbs free energy of formation of the
-            # ideal gas (Joule-based).
-            # try:
-            J_estimate = Joback(self.name, smiles=self.smiles)
-            
-            if self.Gig == None:
-                self.Gig = J_estimate["Gig"]
-            if self.Hig == None:
-                self.Hig = J_estimate["Hig"]
-            if self.Sig == None:
-                self.Sig = ((float(self.Gig) - float(self.Hig))/-298.15)*1000 + self.Selements
-            if self.Cpig == None:
-                self.Cpig = J_estimate["Cpig"]
-            # except:
-            #     if isinstance(self.name, str):
-            #         report_name = self.name
-            #     elif isinstance(self.smiles, str):
-            #         report_name = self.smiles
-            #     else:
-            #         report_name = "ERROR"
-            #     self.err_handler.raise_exception("The properties of aqueous '"+report_name+"' could not be "
-            #         "estimated because its ideal gas properties could not be "
-            #         "estimated with the Joback method.")
+                    self.__sum_props(prop, round_sf=round_sf)
                 
-        # estimate the Gibbs free energy of formation of the aqueous molecule by summing
-        # its ideal gas and hydration properties.
-        # TODO: if ideal gas properties are NaN, ensure aqueous properties are too.
-        # TODO: determine estimation error of ideal gas, then propagate with hydration errors.
-        # TODO: propagate errors into HKF parameter estimations.
-        
-        try:
-            if self.Gaq == None:
+
+        else:
+            # Summing hydration and ideal gas properties to get aqueous properties
+
+            if self.Gig != None and self.Gh != None:
                 self.Gaq = float(self.Gig) + float(self.Gh)
-        except:
-            self.Gaq = float("NaN")
+            else:
+                self.Gaq = float("NaN")
 
-        try:
-            if self.Haq == None:
+            if self.Hig != None and self.Hh != None:
                 self.Haq = float(self.Hig) + float(self.Hh)
-        except:
-            self.Haq = float("NaN")
+            else:
+                self.Haq = float("NaN")
 
-        try:
-            if self.Saq == None:
-                self.Saq = ((float(self.Gaq) - float(self.Haq))/-298.15)*1000 + self.Selements
-        except:
-            self.Saq = float("NaN")
-        try:
-            if self.Cpaq == None:
+            try:
+                if self.Saq == None:
+                    self.Saq = ((float(self.Gaq) - float(self.Haq))/-298.15)*1000 + self.Selements
+            except:
+                self.Saq = float("NaN")
+            
+            if self.Cpig != None and self.Cph != None:
                 self.Cpaq = self.Cpig + float(self.Cph)
-        except:
-            self.Cpaq = float("NaN")
+            else:
+                self.Cpaq = float("NaN")
 
-        # calculate HKF parameters
+
+        # # calculate HKF parameters
         try:
+
+            if self.Gh is None:
+                self.Gh = float("NaN")
+
             # find_HKF requires calories
             hkf_dict, eq = find_HKF(Gh=float(self.Gh)*1000/4.184,
                                     V=float(self.V),
@@ -805,22 +896,10 @@ class Estimate():
         
         return df
 
-    def __estimate_hydration(self):
-        self.__set_groups()
-        self.__est_hydration()
-        return self.__convert_to_OBIGT()
 
-    def __estimate_joback(self):
-        self.__set_groups()
-        self.__est_joback()
-
-    def __estimate_ig(self):
-        self.__set_groups()
-        self.__est_ig()
-
+### This function is a shortcut to the Joback method and should never be used inside of one of the other functions/classes above
 
 def Joback(name, smiles=None, group_data=None):
-    
     """
     Estimate standard state ideal gas properties of a molecule using the Joback
     method. (Joback K. G., Reid R. C., "Estimation of Pure-Component Properties
@@ -848,12 +927,6 @@ def Joback(name, smiles=None, group_data=None):
         - Sig : Ideal gas entropy, J/mol/K.
         - Cpig : Ideal gas isobaric heat capacity, J/mol/K.
     """
-    if group_data is None:
-        with import_package_file(__name__, 'data/joback_groups.csv', as_file=True) as path:
-            group_data = pd.read_csv(path, dtype=str)
+    ig_est = Estimate(name, smiles=smiles, state='gas', ig_method="Joback", show=False, ig_group_data=group_data)
     
-    ig_est = Estimate(name, smiles=smiles, state='gas', ig_method="Joback", show=False,
-                      group_data=group_data, index_col="groups")
-    
-    return {'Gig':ig_est.Gig, 'Hig':ig_est.Hig,
-            'Sig':ig_est.Sig, 'Cpig':ig_est.Cpig}
+    return {"Gig":ig_est.Gig, "Hig":ig_est.Hig, "Sig":ig_est.Sig, "Cpig":ig_est.Cpig}
