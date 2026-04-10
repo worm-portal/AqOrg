@@ -6,6 +6,7 @@ from rdkit.Chem.rdMolDescriptors import CalcMolFormula
 import pandas as pd
 import math
 import sigfig
+from collections import defaultdict
 
 import warnings
 with warnings.catch_warnings():
@@ -95,6 +96,9 @@ class Estimate():
     show : bool, default True
         Show a diagram of the molecule?
     
+    fig_dim : list, default [400, 150]
+        X and Y dimensions in pixels of the figure if show=True or if save=True
+    
     ig_group_data : str, optional
         Path of a CSV containing custom ideal gas group contribution data.
 
@@ -181,9 +185,9 @@ class Estimate():
     
     """
     
-    def __init__(self, name=None, smiles=None, show=True, ig_group_data=None, hyd_group_data=None, aq_group_data=None,
+    def __init__(self, name=None, smiles=None, show=True, fig_dim=[400, 150], ig_group_data=None, hyd_group_data=None, aq_group_data=None,
                        test=False, state='aq', ig_method="Joback", aq_method="hyd+ig", round_sf=True,
-                       save=False, hide_traceback=True, **kwargs):
+                       save=False, hide_traceback=True, substitute_groups=None, assign_groups_to_atoms=None, **kwargs):
                        # E_units="J" # not implemented... tricky because groups
                                      # are in both kJ and J units.
 
@@ -194,6 +198,8 @@ class Estimate():
         self.state = state
         self.ig_method = ig_method
         self.aq_method = aq_method
+        self.show = show
+        self.fig_dim = fig_dim
         
         # valid kwargs
         self.Gh = None
@@ -228,6 +234,8 @@ class Estimate():
         self.ig_group_data = ig_group_data
         self.hyd_group_data = hyd_group_data
         self.aq_group_data = aq_group_data
+        self.substitute_groups = substitute_groups
+        self.assign_groups_to_atoms = assign_groups_to_atoms if assign_groups_to_atoms is not None else {}
 
         if self.state == "gas" and ig_group_data != None:
             self.group_data = ig_group_data
@@ -240,16 +248,36 @@ class Estimate():
 
 
         self.load_group_data()
+        # Only apply substitutions when this Estimate directly uses its group data
+        # for property estimation. For state="aq" with aq_method="hyd+ig", the parent
+        # loads the aq CSV for validation only; substitutions are applied to the
+        # gas/hyd sub-Estimates instead.
+        if not (self.state == "aq" and self.aq_method != "aqueous"):
+            self._apply_substitute_groups()
         self.get_mol_smiles_formula_formula_dict()
         
         if "-" in self.formula_dict.keys() or "+" in self.formula_dict.keys():
             self.err_handler.raise_exception(self.name + " cannot be estimated because it has a net charge.")
 
-        if show:
-            self.display_molecule(save=save)
-            
         if test:
-            print(self.__test_group_match())
+            if self.state == "aq" and self.aq_method != "aqueous":
+                # Test against the gas and hyd group data separately,
+                # mirroring how the actual estimation works.
+                ig_sub = self.substitute_groups if self.ig_method != "Joback" else None
+                ig_assign = self.assign_groups_to_atoms if self.ig_method != "Joback" else None
+                Estimate(smiles=self.smiles, name=self.name, state="gas",
+                         test=True, ig_method=self.ig_method,
+                         ig_group_data=self.ig_group_data,
+                         substitute_groups=ig_sub,
+                         assign_groups_to_atoms=ig_assign,
+                         show=False, fig_dim=self.fig_dim)
+                Estimate(smiles=self.smiles, name=self.name, state="hyd",
+                         test=True, hyd_group_data=self.hyd_group_data,
+                         substitute_groups=self.substitute_groups,
+                         assign_groups_to_atoms=self.assign_groups_to_atoms,
+                         show=False, fig_dim=self.fig_dim)
+            else:
+                self.__test_group_match()
         else:
             # load properties of the elements
             # Cox, J. D., Wagman, D. D., and Medvedev, V. A., CODATA Key Values
@@ -265,25 +293,37 @@ class Estimate():
             self.note = ""
             self.charge = 0 # TODO: allow charge!
             
-            self.__set_groups()
+            # Skip __set_groups() for aq with hyd+ig: the parent's aq group data
+            # is not used for estimation; sub-Estimates handle their own matching.
+            if not (state == 'aq' and self.aq_method != "aqueous"):
+                self.__set_groups()
 
             if state == 'gas':  # calculates self.Xig properties
                 if self.ig_method == "Joback":
                     self.__est_joback()
+                    self.group_contributions = self._build_group_contributions_df(
+                        ['Gig', 'Hig'],
+                        method_constants={'Gig': 53.88, 'Hig': 68.29})
                 else:
                     self.__est_ig(round_sf=round_sf)
+                    self.group_contributions = self._build_group_contributions_df(
+                        ['Gig', 'Hig', 'Cpig'])
             elif state == 'hyd':  # calculates self.Xh properties
                 self.__est_hyd(round_sf=round_sf)
+                self.group_contributions = self._build_group_contributions_df(
+                    ['Gh', 'Hh', 'Cph', 'V'])
             elif state == 'aq':  # calculates self.Xaq properties
                 if self.aq_method != "aqueous":
                     # ideal gas and hydration properties summed to get aqueous properties
                     if self.ig_method == "Joback":
 
-                        ig_props = Estimate(name, smiles=smiles, state='gas', ig_method="Joback", show=False, ig_group_data=self.ig_group_data, round_sf=False,
+                        ig_props = Estimate(name, smiles=smiles, state='gas', ig_method="Joback", show=False, ig_group_data=self.ig_group_data, round_sf=False, fig_dim=self.fig_dim,
                                             **{"pcp_compound":self.pcp_compound, "Gig":self.Gig, "Hig":self.Hig, "Sig":self.Sig, "Cpig":self.Cpig})
 
                     else:
-                        ig_props = Estimate(smiles=self.smiles, name=self.name, state="gas", show=False, ig_method=self.ig_method, ig_group_data=self.ig_group_data, round_sf=False,
+                        ig_props = Estimate(smiles=self.smiles, name=self.name, state="gas", show=False, ig_method=self.ig_method, ig_group_data=self.ig_group_data, round_sf=False, fig_dim=self.fig_dim,
+                                            substitute_groups=self.substitute_groups,
+                                            assign_groups_to_atoms=self.assign_groups_to_atoms,
                                             **{"pcp_compound":self.pcp_compound, "Gig":self.Gig, "Hig":self.Hig, "Sig":self.Sig, "Cpig":self.Cpig})
                     
                     self.Gig = ig_props.Gig
@@ -291,7 +331,9 @@ class Estimate():
                     self.Sig = ig_props.Sig
                     self.Cpig = ig_props.Cpig
 
-                    hyd_props = Estimate(smiles=self.smiles, name=self.name, state="hyd", show=False, hyd_group_data=self.hyd_group_data, round_sf=False,
+                    hyd_props = Estimate(smiles=self.smiles, name=self.name, state="hyd", show=False, hyd_group_data=self.hyd_group_data, round_sf=False, fig_dim=self.fig_dim,
+                                         substitute_groups=self.substitute_groups,
+                                         assign_groups_to_atoms=self.assign_groups_to_atoms,
                                          **{"pcp_compound":self.pcp_compound, "Gh":self.Gh, "Hh":self.Hh, "Sh":self.Sh, "Cph":self.Cph, "V":self.V})
 
                     self.Gh = hyd_props.Gh
@@ -300,11 +342,21 @@ class Estimate():
                     self.Cph = hyd_props.Cph
                     self.V = hyd_props.V
 
+                    self.ig_group_contributions = ig_props.group_contributions
+                    self.hyd_group_contributions = hyd_props.group_contributions
+
                 self.__est_aq(round_sf=round_sf)
+
+                if self.aq_method == "aqueous":
+                    self.group_contributions = self._build_group_contributions_df(
+                        ['Gaq', 'Haq', 'Cpaq', 'V'])
+
+                self.OBIGT = self.__convert_to_OBIGT()
             else:
                 self.err_handler.raise_exception("State must be 'aq', 'hyd', or 'gas'.")
 
-                self.OBIGT = self.__convert_to_OBIGT()
+        if self.show:
+            self.display_molecule(save=save)
 
 
     def get_mol_smiles_formula_formula_dict(self):
@@ -357,7 +409,81 @@ class Estimate():
                                       index=self.group_data["smarts"]).to_dict()
         self.group_data = self.group_data.set_index("smarts")
 
-        
+
+    def _apply_substitute_groups(self):
+        if self.substitute_groups is None:
+            return
+        for new_smarts, existing_smarts in self.substitute_groups.items():
+            if existing_smarts not in self.group_data.index:
+                print(f"Warning: substitute group '{existing_smarts}' not found in group data. Skipping.")
+                continue
+            self.group_data.loc[new_smarts] = self.group_data.loc[existing_smarts]
+            self.pattern_dict[new_smarts] = self.pattern_dict[existing_smarts]
+
+
+    def _build_group_contributions_df(self, props, method_constants=None):
+        """Build a DataFrame showing group contributions for each estimated property.
+
+        Parameters
+        ----------
+        props : list
+            Property column names to include (e.g. ['Gig', 'Hig', 'Cpig']).
+        method_constants : dict, optional
+            Extra per-property offsets added to the total (e.g. Joback constants).
+        """
+        rows = []
+        for group in self.groups:
+            count = self.group_matches.loc[self.name, group]
+            try:
+                count = count.item()
+            except (AttributeError, ValueError):
+                pass
+            count = int(count)
+            if count == 0:
+                continue
+            row = {'group': group, 'count': count}
+            for prop in props:
+                try:
+                    val = float(self.group_data.loc[group, prop])
+                except:
+                    val = float('nan')
+                row[prop] = val
+                row[prop + '_contribution'] = count * val
+            rows.append(row)
+
+        # Add Yo row if present in group data
+        if 'Yo' in self.group_data.index:
+            yo_row = {'group': 'Yo', 'count': ''}
+            for prop in props:
+                try:
+                    val = float(self.group_data.loc['Yo', prop])
+                except:
+                    val = 0.0
+                yo_row[prop] = val
+                yo_row[prop + '_contribution'] = val
+            rows.append(yo_row)
+
+        # Add method constants row (e.g. Joback offsets)
+        if method_constants is not None:
+            const_row = {'group': 'Method constant', 'count': ''}
+            for prop in props:
+                val = method_constants.get(prop, 0.0)
+                const_row[prop] = val
+                const_row[prop + '_contribution'] = val
+            rows.append(const_row)
+
+        df = pd.DataFrame(rows)
+
+        # Add Total row
+        total = {'group': 'Total', 'count': ''}
+        for prop in props:
+            total[prop] = ''
+            total[prop + '_contribution'] = df[prop + '_contribution'].sum()
+        df = pd.concat([df, pd.DataFrame([total])], ignore_index=True)
+
+        return df
+
+
     def __set_groups(self):
         
         self.group_matches = pd.DataFrame(self.match_groups(), index=[self.name])
@@ -427,7 +553,7 @@ class Estimate():
         Match SMARTS strings to a molecule and get a dictionary of group matches.
         This function is meant to be used internally by `Estimate`.
         """
-        
+
         patterns = self.pattern_dict.keys()
         mol = Chem.MolFromSmiles(self.smiles)
 
@@ -441,8 +567,49 @@ class Estimate():
                           "identifying SMARTS group", pattern,
                           ". Skipping this group.")
 
+        # Apply assign_groups_to_atoms overrides if provided
+        if self.assign_groups_to_atoms:
+            # Build atom-to-smarts mapping (same logic as print_atom_group_matches)
+            atom_to_smarts = {}
+            for smarts in self.pattern_dict.keys():
+                if smarts == "Yo":
+                    continue
+                query = Chem.MolFromSmarts(smarts)
+                if query is None:
+                    continue
+                for match in mol.GetSubstructMatches(query):
+                    core_idx = match[1] if len(match) > 1 else match[0]
+                    if core_idx not in atom_to_smarts:
+                        atom_to_smarts[core_idx] = smarts
+
+            # Apply display substitution so dictionary keys match atom table
+            if self.substitute_groups:
+                for core_idx in atom_to_smarts:
+                    matched_smarts = atom_to_smarts[core_idx]
+                    if matched_smarts in self.substitute_groups:
+                        atom_to_smarts[core_idx] = self.substitute_groups[matched_smarts]
+
+            # Validate and apply overrides
+            for smarts, atom_indices in self.assign_groups_to_atoms.items():
+                if smarts not in self.group_data.index:
+                    self.err_handler.raise_exception(
+                        "assign_groups_to_atoms: group '" + smarts +
+                        "' not found in group data.")
+                for idx in atom_indices:
+                    if idx < 0 or idx >= mol.GetNumAtoms():
+                        self.err_handler.raise_exception(
+                            "assign_groups_to_atoms: atom index " + str(idx) +
+                            " is out of range for " + self.name + ".")
+                    atom_to_smarts[idx] = smarts
+
+            # Rebuild match_dict from the modified atom-to-smarts mapping
+            match_dict = dict(zip(patterns, [0]*len(patterns)))
+            for smarts in atom_to_smarts.values():
+                if smarts in match_dict:
+                    match_dict[smarts] += 1
+
         ### check that total formula of groups matches that of the molecule
-        
+
         # create a dictionary of element matches
         total_formula_dict = {}
         for match in match_dict.keys():
@@ -454,12 +621,12 @@ class Estimate():
                 else:
                     total_formula_dict[str(element)] = 0
                     total_formula_dict[element] += this_match[element]
-        
+
         # remove keys of elements with a value of 0 (e.g. "H":0.0)
         for key in list(total_formula_dict.keys()):
             if total_formula_dict[key] == 0.0:
                 total_formula_dict.pop(key, None)
-        
+
         # retrieve individual charges that contribute to net charge
         all_charges = [a.GetFormalCharge() for a in self.mol.GetAtoms()]
         chargedict = {}
@@ -479,24 +646,193 @@ class Estimate():
         if total_formula_dict != test_dict:
             mssg = "The formula of " + self.name + \
                 " does not equal the the elemental composition of the " + \
-                "matched groups. This could be because the database " + \
+                "matched groups (state='" + self.state + "'). This could be because the database " + \
                 "is missing representative groups.\nFormula of " + \
                 self.name + ":\n"
             pcp_dict = parse_formula(self.formula)
             pcp_dict.update(chargedict)
             mssg = mssg + str(pcp_dict) + "\nTotal formula of group matches:\n" + \
                 str(total_formula_dict)
+            match_dict_incomplete = {k:v for k,v in zip(match_dict.keys(), match_dict.values()) if v!= 0}
             mssg = mssg + "\nIncomplete group matches:\n" + \
-                str({k:v for k,v in zip(match_dict.keys(), match_dict.values()) if v!= 0})
+                str(match_dict_incomplete)
+            self.display_highlighted_molecule(match_dict_incomplete)
+            self.display_highlighted_molecule(match_dict_incomplete, show_atom_indices=True)
+            self.print_atom_group_matches(match_dict_incomplete)
+            self.suggest_SMARTS(match_dict_incomplete)
             self.err_handler.raise_exception(mssg)
-        
+
         # add molecular formula to match dictionary
         match_dict["formula"] = self.dict_to_formula(total_formula_dict)
-        
+
         return match_dict
 
+    @staticmethod
+    def get_group_smarts(mol, atom_idx):
+        atom = mol.GetAtomWithIdx(atom_idx)
+        sym = atom.GetSymbol()
+        h = atom.GetTotalNumHs()
+        ring_str = 'R' if atom.IsInRing() else 'R0'
+        core = f'[{sym}X{atom.GetDegree() + h}H{h}{ring_str}]'
 
-    def display_molecule(self, show=True, save=False):
+        neighbor_smarts = []
+        for neighbor in atom.GetNeighbors():
+            ns = neighbor.GetSymbol()
+            nh = neighbor.GetTotalNumHs()
+            nd = neighbor.GetDegree() + nh
+            nr = 'R' if neighbor.IsInRing() else 'R0'
+            neighbor_smarts.append(f'[{ns}X{nd}H{nh}{nr}]')
+
+        neighbor_smarts.sort()
+
+        # Build branched SMARTS so match[1] is always the core atom
+        # and all neighbors are bonded to the core (star topology).
+        # e.g. for 4 neighbors: [N0]-[core](-[N1])(-[N2])-[N3]
+        if len(neighbor_smarts) >= 2:
+            branches = ''.join(f'(-{n})' for n in neighbor_smarts[1:-1])
+            return f'{neighbor_smarts[0]}-{core}{branches}-{neighbor_smarts[-1]}'
+        elif len(neighbor_smarts) == 1:
+            return f'{neighbor_smarts[0]}-{core}'
+        else:
+            return core
+
+
+    def _build_atom_to_smarts(self):
+        """Build atom-to-SMARTS mapping, applying substitute_groups and
+        assign_groups_to_atoms overrides."""
+        mol = Chem.MolFromSmiles(self.smiles)
+
+        # Use the same matching order as match_groups(): iterate all SMARTS
+        # from pattern_dict so the first pattern to claim a core atom wins,
+        # consistent with the counting in match_groups().
+        atom_to_smarts = {}
+        for smarts in self.pattern_dict.keys():
+            if smarts == "Yo":
+                continue
+            query = Chem.MolFromSmarts(smarts)
+            if query is None:
+                continue
+            for match in mol.GetSubstructMatches(query):
+                core_idx = match[1] if len(match) > 1 else match[0]
+                if core_idx not in atom_to_smarts:
+                    atom_to_smarts[core_idx] = smarts
+
+        # For substituted groups, display the target group name (the group
+        # whose properties are being used) instead of the matching SMARTS.
+        if self.substitute_groups:
+            for core_idx in atom_to_smarts:
+                matched_smarts = atom_to_smarts[core_idx]
+                if matched_smarts in self.substitute_groups:
+                    atom_to_smarts[core_idx] = self.substitute_groups[matched_smarts]
+
+        # Apply assign_groups_to_atoms overrides
+        if self.assign_groups_to_atoms:
+            for smarts, atom_indices in self.assign_groups_to_atoms.items():
+                for idx in atom_indices:
+                    atom_to_smarts[idx] = smarts
+
+        return atom_to_smarts
+
+    def print_atom_group_matches(self, match_dict):
+        """Print which SMARTS group from match_dict matched each atom."""
+        mol = Chem.MolFromSmiles(self.smiles)
+        atom_to_smarts = self._build_atom_to_smarts()
+
+        state_labels = {"gas": "Ideal gas", "hyd": "Hydration", "aq": "Aqueous"}
+        label = state_labels.get(self.state, "Atom")
+        print(f"{label} atom group matches:")
+        print(f"  {'Atom':<6} {'Symbol':<8} {'SMARTS group'}")
+        print(f"  {'----':<6} {'------':<8} {'------------'}")
+        for idx in range(mol.GetNumAtoms()):
+            atom = mol.GetAtomWithIdx(idx)
+            symbol = atom.GetSymbol()
+            if idx in atom_to_smarts:
+                print(f"  {idx:<6} {symbol:<8} {atom_to_smarts[idx]}")
+            else:
+                print(f"  {idx:<6} {symbol:<8} (unmatched)")
+
+    def suggest_SMARTS(self, match_dict):
+        mol = Chem.MolFromSmiles(self.smiles)
+
+        # Use _build_atom_to_smarts to get the full atom mapping
+        # (includes assign_groups_to_atoms overrides)
+        matched = set(self._build_atom_to_smarts().keys())
+
+        unmatched_groups = defaultdict(list)
+        for atom in mol.GetAtoms():
+            idx = atom.GetIdx()
+            if idx not in matched:
+                smarts = self.get_group_smarts(mol, idx)
+                unmatched_groups[smarts].append(idx)
+
+        print("Unmatched atom SMARTS suggestions:")
+        for smarts, indices in unmatched_groups.items():
+            print(f"  '{smarts}' → atoms {indices}")
+
+
+    def display_highlighted_molecule(self, match_dict, show_atom_indices=False):
+
+        mol = Chem.MolFromSmiles(self.smiles)
+
+        # Use _build_atom_to_smarts to get the full atom mapping
+        # (includes assign_groups_to_atoms overrides)
+        atom_to_smarts = self._build_atom_to_smarts()
+
+        matched_atoms = list(atom_to_smarts.keys())
+        matched_set = set(matched_atoms)
+        all_atoms = set(range(mol.GetNumAtoms()))
+        unmatched_atoms = list(all_atoms - matched_set)
+
+        # Build per-atom color map
+        green = (0.6, 1.0, 0.6)
+        red = (1.0, 0.7, 0.7)
+        atom_colors = {}
+        for idx in matched_atoms:
+            atom_colors[idx] = green
+        for idx in unmatched_atoms:
+            atom_colors[idx] = red
+
+        # Only highlight bonds where both atoms share the same highlight color
+        highlight_bonds = []
+        bond_colors = {}
+        for bond in mol.GetBonds():
+            a1 = bond.GetBeginAtomIdx()
+            a2 = bond.GetEndAtomIdx()
+            both_matched = a1 in matched_set and a2 in matched_set
+            both_unmatched = a1 not in matched_set and a2 not in matched_set
+            if both_matched:
+                highlight_bonds.append(bond.GetIdx())
+                bond_colors[bond.GetIdx()] = green
+            elif both_unmatched:
+                highlight_bonds.append(bond.GetIdx())
+                bond_colors[bond.GetIdx()] = red
+
+        highlight_atoms = matched_atoms + unmatched_atoms
+
+        if show_atom_indices:
+            for atom in mol.GetAtoms():
+                atom.SetProp('molAtomMapNumber', str(atom.GetIdx()))
+
+        d2d = rdMolDraw2D.MolDraw2DSVG(self.fig_dim[0], self.fig_dim[1])
+        d2d.DrawMolecule(
+            mol,
+            highlightAtoms=highlight_atoms,
+            highlightAtomColors=atom_colors,
+            highlightBonds=highlight_bonds,
+            highlightBondColors=bond_colors,
+        )
+        d2d.FinishDrawing()
+
+        import re
+        svg = d2d.GetDrawingText()
+        # Replace width and height attributes in the SVG tag
+        svg = re.sub(r'width=\'[^\']*\'', f'width=\'{self.fig_dim[0]}px\'', svg)
+        svg = re.sub(r'height=\'[^\']*\'', f'height=\'{self.fig_dim[1]}px\'', svg)
+
+        display(SVG(svg))
+
+
+    def display_molecule(self, show=True, save=False, highlights_list=None):
         """
         Display a molecule in a Jupyter notebook or save it as an SVG and PNG.
         This function is meant to be used internally by `Estimate`.
@@ -504,13 +840,12 @@ class Estimate():
         mol_smiles = Chem.MolFromSmiles(self.smiles)
         
         mc = Chem.Mol(mol_smiles.ToBinary())
-        molSize=(450, 150)
         
         if not mc.GetNumConformers():
             #Compute 2D coordinates
             rdDepictor.Compute2DCoords(mc)
         # init the drawer with the size
-        drawer = rdMolDraw2D.MolDraw2DSVG(molSize[0],molSize[1])
+        drawer = rdMolDraw2D.MolDraw2DSVG(self.fig_dim[0], self.fig_dim[1])
         #draw the molcule
         drawer.DrawMolecule(mc)
         drawer.FinishDrawing()
@@ -530,7 +865,15 @@ class Estimate():
 
     def __test_group_match(self):
         match_dict = self.match_groups()
-        return {key:value for key,value in zip(match_dict.keys(), match_dict.values()) if value !=0}
+        match_dict_nonzero = {key:value for key,value in zip(match_dict.keys(), match_dict.values()) if value !=0 and key != "formula"}
+        self.display_highlighted_molecule(match_dict_nonzero, show_atom_indices=True)
+        self.print_atom_group_matches(match_dict_nonzero)
+        print("\nGroup counts:")
+        print(f"  {'SMARTS group':<40} {'Count'}")
+        print(f"  {'------------':<40} {'-----'}")
+        for group, count in match_dict_nonzero.items():
+            print(f"  {group:<40} {count}")
+        return match_dict_nonzero
         
 
     def __est_ig(self, props=["Gig", "Hig", "Sig", "Cpig"], round_sf=True):

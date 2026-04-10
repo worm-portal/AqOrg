@@ -98,6 +98,9 @@ Thumbs.db
 *.md
 !README.md
 
+# Test directory
+test/
+
 # Temporary files
 *.tmp
 *.bak
