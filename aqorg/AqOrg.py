@@ -417,6 +417,11 @@ class Estimate():
             if existing_smarts not in self.group_data.index:
                 print(f"Warning: substitute group '{existing_smarts}' not found in group data. Skipping.")
                 continue
+            # If this group already exists in group_data and the user has
+            # explicitly assigned it to atoms, preserve its original
+            # properties so that assign_groups_to_atoms uses the CSV values.
+            if new_smarts in self.group_data.index and new_smarts in self.assign_groups_to_atoms:
+                continue
             self.group_data.loc[new_smarts] = self.group_data.loc[existing_smarts]
             self.pattern_dict[new_smarts] = self.pattern_dict[existing_smarts]
 
