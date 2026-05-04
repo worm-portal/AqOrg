@@ -675,14 +675,14 @@ class Estimate():
     @staticmethod
     def get_group_smarts(mol, atom_idx):
         atom = mol.GetAtomWithIdx(atom_idx)
-        sym = atom.GetSymbol()
+        sym = atom.GetSymbol().lower() if atom.GetIsAromatic() else atom.GetSymbol()
         h = atom.GetTotalNumHs()
         ring_str = 'R' if atom.IsInRing() else 'R0'
         core = f'[{sym}X{atom.GetDegree() + h}H{h}{ring_str}]'
 
         neighbor_smarts = []
         for neighbor in atom.GetNeighbors():
-            ns = neighbor.GetSymbol()
+            ns = neighbor.GetSymbol().lower() if neighbor.GetIsAromatic() else neighbor.GetSymbol()
             nh = neighbor.GetTotalNumHs()
             nd = neighbor.GetDegree() + nh
             nr = 'R' if neighbor.IsInRing() else 'R0'
