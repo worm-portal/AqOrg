@@ -315,35 +315,39 @@ class Estimate():
             elif state == 'aq':  # calculates self.Xaq properties
                 if self.aq_method != "aqueous":
                     # ideal gas and hydration properties summed to get aqueous properties
-                    if self.ig_method == "Joback":
+                    ig_all_precomputed = all(v is not None for v in [self.Gig, self.Hig, self.Sig, self.Cpig])
+                    hyd_all_precomputed = all(v is not None for v in [self.Gh, self.Hh, self.Sh, self.Cph, self.V])
 
-                        ig_props = Estimate(name, smiles=smiles, state='gas', ig_method="Joback", show=False, ig_group_data=self.ig_group_data, round_sf=False, fig_dim=self.fig_dim,
-                                            **{"pcp_compound":self.pcp_compound, "Gig":self.Gig, "Hig":self.Hig, "Sig":self.Sig, "Cpig":self.Cpig})
-
+                    if ig_all_precomputed:
+                        self.ig_group_contributions = None
                     else:
-                        ig_props = Estimate(smiles=self.smiles, name=self.name, state="gas", show=False, ig_method=self.ig_method, ig_group_data=self.ig_group_data, round_sf=False, fig_dim=self.fig_dim,
-                                            substitute_groups=self.substitute_groups,
-                                            assign_groups_to_atoms=self.assign_groups_to_atoms,
-                                            **{"pcp_compound":self.pcp_compound, "Gig":self.Gig, "Hig":self.Hig, "Sig":self.Sig, "Cpig":self.Cpig})
-                    
-                    self.Gig = ig_props.Gig
-                    self.Hig = ig_props.Hig
-                    self.Sig = ig_props.Sig
-                    self.Cpig = ig_props.Cpig
+                        if self.ig_method == "Joback":
+                            ig_props = Estimate(name, smiles=smiles, state='gas', ig_method="Joback", show=False, ig_group_data=self.ig_group_data, round_sf=False, fig_dim=self.fig_dim,
+                                                **{"pcp_compound":self.pcp_compound, "Gig":self.Gig, "Hig":self.Hig, "Sig":self.Sig, "Cpig":self.Cpig})
+                        else:
+                            ig_props = Estimate(smiles=self.smiles, name=self.name, state="gas", show=False, ig_method=self.ig_method, ig_group_data=self.ig_group_data, round_sf=False, fig_dim=self.fig_dim,
+                                                substitute_groups=self.substitute_groups,
+                                                assign_groups_to_atoms=self.assign_groups_to_atoms,
+                                                **{"pcp_compound":self.pcp_compound, "Gig":self.Gig, "Hig":self.Hig, "Sig":self.Sig, "Cpig":self.Cpig})
+                        self.Gig = ig_props.Gig
+                        self.Hig = ig_props.Hig
+                        self.Sig = ig_props.Sig
+                        self.Cpig = ig_props.Cpig
+                        self.ig_group_contributions = ig_props.group_contributions
 
-                    hyd_props = Estimate(smiles=self.smiles, name=self.name, state="hyd", show=False, hyd_group_data=self.hyd_group_data, round_sf=False, fig_dim=self.fig_dim,
-                                         substitute_groups=self.substitute_groups,
-                                         assign_groups_to_atoms=self.assign_groups_to_atoms,
-                                         **{"pcp_compound":self.pcp_compound, "Gh":self.Gh, "Hh":self.Hh, "Sh":self.Sh, "Cph":self.Cph, "V":self.V})
-
-                    self.Gh = hyd_props.Gh
-                    self.Hh = hyd_props.Hh
-                    self.Sh = hyd_props.Sh
-                    self.Cph = hyd_props.Cph
-                    self.V = hyd_props.V
-
-                    self.ig_group_contributions = ig_props.group_contributions
-                    self.hyd_group_contributions = hyd_props.group_contributions
+                    if hyd_all_precomputed:
+                        self.hyd_group_contributions = None
+                    else:
+                        hyd_props = Estimate(smiles=self.smiles, name=self.name, state="hyd", show=False, hyd_group_data=self.hyd_group_data, round_sf=False, fig_dim=self.fig_dim,
+                                             substitute_groups=self.substitute_groups,
+                                             assign_groups_to_atoms=self.assign_groups_to_atoms,
+                                             **{"pcp_compound":self.pcp_compound, "Gh":self.Gh, "Hh":self.Hh, "Sh":self.Sh, "Cph":self.Cph, "V":self.V})
+                        self.Gh = hyd_props.Gh
+                        self.Hh = hyd_props.Hh
+                        self.Sh = hyd_props.Sh
+                        self.Cph = hyd_props.Cph
+                        self.V = hyd_props.V
+                        self.hyd_group_contributions = hyd_props.group_contributions
 
                 self.__est_aq(round_sf=round_sf)
 
