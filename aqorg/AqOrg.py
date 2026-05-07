@@ -631,6 +631,15 @@ class Estimate():
                     total_formula_dict[str(element)] = 0
                     total_formula_dict[element] += this_match[element]
 
+        # convert lowercase aromatic element symbols to uppercase
+        for key in list(total_formula_dict.keys()):
+            upper_key = key.capitalize()
+            if upper_key != key:
+                if upper_key in total_formula_dict:
+                    total_formula_dict[upper_key] += total_formula_dict.pop(key)
+                else:
+                    total_formula_dict[upper_key] = total_formula_dict.pop(key)
+
         # remove keys of elements with a value of 0 (e.g. "H":0.0)
         for key in list(total_formula_dict.keys()):
             if total_formula_dict[key] == 0.0:
